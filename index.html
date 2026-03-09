@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#3D6B4F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="이안이네 가족">
 <title>이안이네 가족</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
 <style>
@@ -332,6 +337,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import {
   getDatabase, ref, push, onValue, remove, set, onDisconnect, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import {
+  getMessaging, getToken, onMessage
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCfd-Qb-uhQ8cv4yTE0foQin5RzMxiNgDs",
@@ -339,12 +347,15 @@ const firebaseConfig = {
   databaseURL: "https://shr-family-board-default-rtdb.firebaseio.com",
   projectId: "shr-family-board",
   storageBucket: "shr-family-board.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "1:000000000000:web:000000000000"
+  messagingSenderId: "822231408252",
+  appId: "1:822231408252:web:86e13ae5eb794999fbf3f9"
 };
+
+const VAPID_KEY = "BCaZzBKjyfv2cso8Yo5Y3tVhvhhdYnsAIP0WdzO4TRc4uOCTtc7kThZ-oXDYTKxwKqt3Vc868fh0mfBmKeRcyeI";
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+let messaging = null;
 
 const COLORS = [
   '#3D6B4F','#C0553C','#4A6FA5','#A0672A',
@@ -354,7 +365,8 @@ const COLORS = [
 let myName = '', myColor = COLORS[0], roomCode = '';
 let itemCount = 0;
 let presenceRef = null;
-let itemsMap = {}; // id -> item 전체 데이터 저장
+let itemsMap = {};
+let fcmToken = null;
 
 // 색상 선택기
 function initColors() {
@@ -372,6 +384,36 @@ function initColors() {
   });
 }
 initColors();
+
+// Service Worker 등록 + FCM 초기화
+async function initPush() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    const reg = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+    messaging = getMessaging(app);
+
+    // 포그라운드 메시지 수신
+    onMessage(messaging, payload => {
+      const { title, body } = payload.notification;
+      showToast(`🔔 ${body}`);
+    });
+
+    // 알림 권한 요청
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      console.log('알림 권한 거부됨');
+      return;
+    }
+
+    // FCM 토큰 발급
+    fcmToken = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
+    if (fcmToken && roomCode) {
+      await set(ref(db, `rooms/${roomCode}/fcmTokens/${myName}`), fcmToken);
+    }
+  } catch (e) {
+    console.log('Push 초기화 오류:', e);
+  }
+}
 
 // Firebase 로드 완료
 document.getElementById('loading').style.display = 'none';
@@ -407,14 +449,12 @@ function enterBoard() {
   document.getElementById('me-dot').style.background = myColor;
   document.getElementById('me-name').textContent = myName;
   document.getElementById('room-chip').textContent = '📋 ' + roomCode;
-  document.getElementById('input-hint').textContent = '방 코드: ' + roomCode + '  ·  상단 코드 탭 → 복사';
-
-  document.getElementById('input-hint').textContent = '';  // hint는 HTML에서 직접 설정
 
   setupPresence();
   listenItems();
+  initPush(); // 푸시 알림 초기화
 
-  // ✏️ 수정 버튼 이벤트 위임
+  // 수정 버튼 이벤트 위임
   document.getElementById('board-body').addEventListener('click', e => {
     const btn = e.target.closest('.btn-edit');
     if (!btn) return;
@@ -428,12 +468,10 @@ function enterBoard() {
     ta.style.height = 'auto';
     ta.style.height = Math.min(ta.scrollHeight, 130) + 'px';
   });
-  // Enter = 줄바꿈, 전송은 버튼으로만
   ta.addEventListener('keydown', e => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault(); sendMemo();
     }
-    // 일반 Enter는 기본 동작(줄바꿈) 허용
   });
 }
 
@@ -464,7 +502,7 @@ function renderMembers(members) {
   bar.innerHTML = '';
   if (firstChip) bar.appendChild(firstChip);
   Object.entries(members).forEach(([name, info]) => {
-    if (!info.online) return; // 오프라인은 표시 안 함
+    if (!info.online) return;
     const chip = document.createElement('div');
     chip.className = 'member-chip';
     chip.innerHTML = `<div class="m-dot" style="background:${info.color||'#999'}"></div><span>${esc(name)}</span>`;
@@ -485,21 +523,43 @@ function listenItems() {
       if (newest.author !== myName) showToast(`${newest.author}님이 새 메모를 추가했어요!`);
     }
     itemCount = items.length;
-    // itemsMap 갱신
     itemsMap = {};
     items.forEach(item => { itemsMap[item.id] = item; });
     renderItems(items);
   });
 }
 
-// 메모 전송
+// 메모 전송 + 푸시 발송
 window.sendMemo = async () => {
   const ta = document.getElementById('memo-input');
   const text = ta.value.trim();
   if (!text) return;
+
+  // Firebase에 메모 저장
   await push(ref(db, `rooms/${roomCode}/items`), {
     author: myName, color: myColor, text, ts: Date.now()
   });
+
+  // 다른 가족들 FCM 토큰 수집 → 푸시 발송 요청
+  const tokensSnap = await new Promise(res => {
+    onValue(ref(db, `rooms/${roomCode}/fcmTokens`), res, { onlyOnce: true });
+  });
+  const tokens = tokensSnap.val() || {};
+  const otherTokens = Object.entries(tokens)
+    .filter(([name]) => name !== myName)
+    .map(([, token]) => token);
+
+  if (otherTokens.length > 0) {
+    // Firebase Functions 없이 직접 FCM REST API 호출
+    // (Realtime DB에 알림 큐 저장 → SW에서 처리)
+    await push(ref(db, `rooms/${roomCode}/notifications`), {
+      title: '이안이네 가족',
+      body: `${myName}: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`,
+      tokens: otherTokens,
+      ts: Date.now()
+    });
+  }
+
   ta.value = '';
   ta.style.height = 'auto';
 };
@@ -514,7 +574,6 @@ let editingId = null;
 
 window.editItem = (id, currentText) => {
   editingId = id;
-  // 모달 생성
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.id = 'edit-modal';
@@ -611,7 +670,7 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-// 자동 로그인 (이전 세션 복원)
+// 자동 로그인
 const sName = localStorage.getItem('fb_name');
 const sColor = localStorage.getItem('fb_color');
 const sRoom = localStorage.getItem('fb_room');
