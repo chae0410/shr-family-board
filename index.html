@@ -306,6 +306,7 @@
       <div class="me-pill">
         <div class="me-dot" id="me-dot"></div>
         <span id="me-name"></span>
+        <button onclick="logout()" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text-sub);padding:2px 4px;border-radius:6px;transition:color 0.2s;" title="로그아웃">↩</button>
       </div>
     </div>
   </div>
@@ -640,6 +641,19 @@ function renderItems(items) {
     body.appendChild(card);
   });
 }
+
+window.logout = () => {
+  // 오프라인 처리
+  if (presenceRef) set(presenceRef, { color: myColor, online: false });
+  // 로컬 저장 삭제
+  localStorage.removeItem('fb_name');
+  localStorage.removeItem('fb_color');
+  localStorage.removeItem('fb_room');
+  // 화면 전환
+  document.getElementById('main-screen').style.display = 'none';
+  document.getElementById('setup-screen').style.display = 'flex';
+  showToast('로그아웃 됐어요');
+};
 
 window.copyCode = () => {
   navigator.clipboard.writeText(roomCode)
