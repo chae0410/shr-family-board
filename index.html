@@ -464,10 +464,10 @@ function renderMembers(members) {
   bar.innerHTML = '';
   if (firstChip) bar.appendChild(firstChip);
   Object.entries(members).forEach(([name, info]) => {
+    if (!info.online) return; // 오프라인은 표시 안 함
     const chip = document.createElement('div');
     chip.className = 'member-chip';
-    chip.style.opacity = info.online ? '1' : '0.45';
-    chip.innerHTML = `<div class="m-dot" style="background:${info.color||'#999'}"></div><span>${esc(name)}${info.online?'':' (오프라인)'}</span>`;
+    chip.innerHTML = `<div class="m-dot" style="background:${info.color||'#999'}"></div><span>${esc(name)}</span>`;
     bar.appendChild(chip);
   });
 }
