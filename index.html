@@ -354,6 +354,13 @@ const firebaseConfig = {
 
 const VAPID_KEY = "BCaZzBKjyfv2cso8Yo5Y3tVhvhhdYnsAIP0WdzO4TRc4uOCTtc7kThZ-oXDYTKxwKqt3Vc868fh0mfBmKeRcyeI";
 
+// 가족 사진 매핑
+const MEMBER_PHOTOS = {
+  '이안 파파': 'papa.jpg',
+  '이안맘': 'mam.jpg',
+  '이안': 'yian.jpg',
+};
+
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 let messaging = null;
@@ -628,7 +635,9 @@ function renderItems(items) {
     card.innerHTML = `
       <div class="card-header">
         <div class="card-author">
-          <div class="author-stripe" style="background:${item.color}"></div>
+          ${MEMBER_PHOTOS[item.author]
+            ? `<img src="${MEMBER_PHOTOS[item.author]}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid ${item.color};flex-shrink:0;" alt="${esc(item.author)}">`
+            : `<div class="author-stripe" style="background:${item.color}"></div>`}
           <span class="author-name" style="color:${item.color}">${esc(item.author)}</span>
         </div>
         <div class="card-meta">
