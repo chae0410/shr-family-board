@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>우리 가족 공유판</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F6F4EF;
+    --surface: #FFFFFF;
+    --border: #E8E3D9;
+    --text: #2A2824;
+    --text-sub: #A09A90;
+    --accent: #3D6B4F;
+    --accent-light: #EAF2EC;
+    --danger: #C0553C;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overscroll-behavior: none;
+  }
+
+  /* SETUP */
+  #setup-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 40px 24px;
+  }
+
+  .logo-wrap { margin-bottom: 28px; text-align: center; }
+  .logo-icon { font-size: 44px; display: block; margin-bottom: 8px; animation: float 3s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  .logo-title { font-family: 'Gowun Dodum', sans-serif; font-size: 22px; color: var(--accent); }
+  .logo-sub { font-size: 13px; color: var(--text-sub); margin-top: 4px; }
+
+  .setup-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 390px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  }
+
+  .field-label { font-size: 11px; font-weight: 700; color: var(--text-sub); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 9px; display: block; }
+
+  .text-input {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 13px 15px;
+    font-size: 15px;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .text-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+
+  .color-grid { display: flex; gap: 10px; flex-wrap: wrap; }
+  .color-dot {
+    width: 34px; height: 34px; border-radius: 50%; cursor: pointer;
+    border: 3px solid transparent;
+    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  }
+  .color-dot.selected { border-color: var(--text); transform: scale(1.18); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+
+  .divider { display: flex; align-items: center; gap: 12px; color: var(--text-sub); font-size: 12px; font-weight: 500; }
+  .divider::before,.divider::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  .btn-primary {
+    background: var(--accent); color: #fff; border: none; border-radius: 12px;
+    padding: 14px; font-size: 15px; font-weight: 700; font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer; width: 100%; transition: opacity 0.2s, transform 0.1s;
+  }
+  .btn-primary:active { transform: scale(0.98); opacity: 0.9; }
+
+  .btn-outline {
+    background: transparent; color: var(--accent); border: 1.5px solid var(--accent);
+    border-radius: 12px; padding: 13px; font-size: 15px; font-weight: 500;
+    font-family: 'Noto Sans KR', sans-serif; cursor: pointer; width: 100%;
+    transition: background 0.2s, color 0.2s, transform 0.1s;
+  }
+  .btn-outline:active { transform: scale(0.98); }
+  .btn-outline:hover { background: var(--accent-light); }
+
+  .join-row { display: flex; gap: 8px; }
+  .join-row .text-input { flex: 1; }
+
+  .btn-join {
+    background: var(--accent); color: #fff; border: none; border-radius: 12px;
+    padding: 13px 18px; font-size: 14px; font-weight: 700; font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer; white-space: nowrap; transition: opacity 0.2s; flex-shrink: 0;
+  }
+  .btn-join:active { opacity: 0.8; }
+
+  /* MAIN */
+  #main-screen { display: none; flex-direction: column; min-height: 100vh; }
+
+  .top-bar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 14px 18px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 20; box-shadow: 0 1px 8px rgba(0,0,0,0.05);
+  }
+  .top-left { display: flex; align-items: center; gap: 8px; }
+  .board-icon { font-size: 20px; }
+  .board-title { font-family: 'Gowun Dodum', sans-serif; font-size: 17px; color: var(--accent); }
+  .top-right { display: flex; align-items: center; gap: 8px; }
+
+  .room-chip {
+    font-size: 11px; font-weight: 700; color: var(--accent);
+    background: var(--accent-light); border: 1px solid #C2DEC8;
+    border-radius: 20px; padding: 5px 11px; cursor: pointer;
+    letter-spacing: 0.06em; transition: background 0.15s; user-select: none;
+  }
+  .room-chip:active { background: #D4EDD9; }
+
+  .me-pill { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; }
+  .me-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  .members-bar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 8px 18px; display: flex; gap: 14px; overflow-x: auto;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .members-bar::-webkit-scrollbar { display: none; }
+
+  .member-chip { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-sub); white-space: nowrap; flex-shrink: 0; }
+  .member-chip .m-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #ccc; display: inline-block; margin-right: 5px; transition: background 0.4s; }
+  .status-dot.connected { background: #4CAF50; box-shadow: 0 0 0 2px #C8E6C9; }
+  .status-dot.disconnected { background: #ef5350; }
+
+  .board-body { flex: 1; padding: 16px 16px 150px; display: flex; flex-direction: column; gap: 10px; }
+
+  .empty-state { text-align: center; color: var(--text-sub); font-size: 14px; margin-top: 80px; line-height: 2; }
+  .empty-icon { font-size: 36px; display: block; margin-bottom: 8px; opacity: 0.4; }
+
+  .memo-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 8px;
+    animation: cardIn 0.22s ease;
+  }
+  @keyframes cardIn { from{opacity:0;transform:translateY(10px) scale(0.98)} to{opacity:1;transform:translateY(0) scale(1)} }
+
+  .card-header { display: flex; align-items: center; justify-content: space-between; }
+  .card-author { display: flex; align-items: center; gap: 7px; }
+  .author-stripe { width: 3px; height: 16px; border-radius: 2px; flex-shrink: 0; }
+  .author-name { font-size: 12px; font-weight: 700; letter-spacing: 0.02em; }
+  .card-meta { display: flex; align-items: center; gap: 8px; }
+  .card-time { font-size: 11px; color: var(--text-sub); }
+  .btn-delete {
+    background: none; border: none; cursor: pointer; color: #D0CBC0;
+    font-size: 18px; line-height: 1; padding: 2px 4px; border-radius: 6px;
+    transition: color 0.2s, background 0.2s;
+  }
+  .btn-delete:hover,.btn-delete:active { color: var(--danger); background: #FEF0ED; }
+  .btn-edit {
+    background: none; border: none; cursor: pointer; color: #C8C2B8;
+    font-size: 14px; line-height: 1; padding: 2px 4px; border-radius: 6px;
+    transition: color 0.2s, background 0.2s;
+  }
+  .btn-edit:hover,.btn-edit:active { color: var(--accent); background: var(--accent-light); }
+  .card-text { font-size: 14px; line-height: 1.7; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+
+  /* 수정 모달 */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    z-index: 50; display: flex; align-items: flex-end;
+    animation: fadeIn 0.2s ease;
+  }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  .modal-box {
+    background: var(--surface); border-radius: 20px 20px 0 0;
+    padding: 20px 16px 36px; width: 100%;
+    animation: slideUp 0.25s ease;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+  .modal-title { font-size: 14px; font-weight: 700; color: var(--text-sub); letter-spacing: 0.05em; }
+  .modal-textarea {
+    width: 100%; border: 1.5px solid var(--border); border-radius: 12px;
+    padding: 12px 14px; font-size: 14px; font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text); background: var(--bg); resize: none; outline: none;
+    min-height: 100px; max-height: 200px; line-height: 1.6;
+    transition: border-color 0.2s;
+  }
+  .modal-textarea:focus { border-color: var(--accent); }
+  .modal-btns { display: flex; gap: 8px; }
+  .modal-btns .btn-primary { flex: 1; padding: 12px; font-size: 14px; }
+  .modal-btns .btn-cancel {
+    flex: 0 0 80px; background: var(--bg); color: var(--text-sub);
+    border: 1.5px solid var(--border); border-radius: 12px;
+    font-size: 14px; font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .modal-btns .btn-cancel:active { background: var(--border); }
+
+  .input-area {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 12px 14px 28px; box-shadow: 0 -4px 20px rgba(0,0,0,0.07); z-index: 20;
+  }
+  .input-row { display: flex; gap: 8px; align-items: flex-end; }
+  .memo-textarea {
+    flex: 1; border: 1.5px solid var(--border); border-radius: 14px;
+    padding: 11px 14px; font-size: 14px; font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text); background: var(--bg); resize: none; outline: none;
+    min-height: 46px; max-height: 130px; overflow-y: auto; line-height: 1.55;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .memo-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+  .btn-send {
+    background: var(--accent); color: #fff; border: none; border-radius: 14px;
+    width: 46px; height: 46px; font-size: 20px; cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.2s, transform 0.1s; box-shadow: 0 2px 8px rgba(61,107,79,0.3);
+  }
+  .btn-send:active { transform: scale(0.93); opacity: 0.85; }
+  .input-hint { font-size: 11px; color: var(--text-sub); text-align: center; margin-top: 7px; line-height: 1.6; }
+
+  .toast {
+    position: fixed; bottom: 120px; left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: rgba(42,40,36,0.9); color: #fff; font-size: 13px;
+    padding: 9px 20px; border-radius: 22px; z-index: 100; opacity: 0;
+    transition: opacity 0.28s, transform 0.28s; pointer-events: none; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .loading-overlay {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 50; gap: 14px; font-size: 14px; color: var(--text-sub);
+  }
+  .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <span>Firebase 연결 중...</span>
+</div>
+
+<!-- SETUP -->
+<div id="setup-screen" style="display:none;">
+  <div class="logo-wrap">
+    <span class="logo-icon">🏠</span>
+    <div class="logo-title">우리 가족 공유판</div>
+    <div class="logo-sub">가족 모두가 함께 보는 실시간 메모장</div>
+  </div>
+  <div class="setup-card">
+    <div>
+      <span class="field-label">내 이름</span>
+      <input class="text-input" id="input-name" placeholder="예: 아빠, 엄마, 딸..." maxlength="10">
+    </div>
+    <div>
+      <span class="field-label">내 색상</span>
+      <div class="color-grid" id="color-grid"></div>
+    </div>
+    <div class="divider">방 선택</div>
+    <div>
+      <span class="field-label">방 코드로 참여</span>
+      <div class="join-row">
+        <input class="text-input" id="input-room" placeholder="방 코드 입력..." maxlength="10" style="text-transform:uppercase;">
+        <button class="btn-join" onclick="joinRoom()">참여 →</button>
+      </div>
+    </div>
+    <button class="btn-outline" onclick="createRoom()">✚ 새 방 만들기</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main-screen">
+  <div class="top-bar">
+    <div class="top-left">
+      <span class="board-icon">🏠</span>
+      <span class="board-title">가족 공유판</span>
+    </div>
+    <div class="top-right">
+      <span class="room-chip" id="room-chip" onclick="copyCode()">📋 ···</span>
+      <div class="me-pill">
+        <div class="me-dot" id="me-dot"></div>
+        <span id="me-name"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="members-bar" id="members-bar">
+    <div class="member-chip">
+      <span class="status-dot" id="conn-dot"></span>
+      <span id="conn-label" style="font-size:11px;">연결 중...</span>
+    </div>
+  </div>
+
+  <div class="board-body" id="board-body">
+    <div class="empty-state"><span class="empty-icon">✏️</span>불러오는 중...</div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-row">
+      <textarea class="memo-textarea" id="memo-input" placeholder="일정이나 공유할 내용을 입력하세요..." rows="1"></textarea>
+      <button class="btn-send" onclick="sendMemo()">↑</button>
+    </div>
+    <div class="input-hint" id="input-hint">↵ Enter = 줄바꿈&nbsp;&nbsp;|&nbsp;&nbsp;↑ 버튼 = 전송</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getDatabase, ref, push, onValue, remove, set, onDisconnect, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCfd-Qb-uhQ8cv4yTE0foQin5RzMxiNgDs",
+  authDomain: "shr-family-board.firebaseapp.com",
+  databaseURL: "https://shr-family-board-default-rtdb.firebaseio.com",
+  projectId: "shr-family-board",
+  storageBucket: "shr-family-board.appspot.com",
+  messagingSenderId: "000000000000",
+  appId: "1:000000000000:web:000000000000"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const COLORS = [
+  '#3D6B4F','#C0553C','#4A6FA5','#A0672A',
+  '#7B4F9E','#2A8C82','#C4732A','#5A5A5A'
+];
+
+let myName = '', myColor = COLORS[0], roomCode = '';
+let itemCount = 0;
+let presenceRef = null;
+let itemsMap = {}; // id -> item 전체 데이터 저장
+
+// 색상 선택기
+function initColors() {
+  const grid = document.getElementById('color-grid');
+  COLORS.forEach((c, i) => {
+    const d = document.createElement('div');
+    d.className = 'color-dot' + (i === 0 ? ' selected' : '');
+    d.style.background = c;
+    d.onclick = () => {
+      document.querySelectorAll('.color-dot').forEach(x => x.classList.remove('selected'));
+      d.classList.add('selected');
+      myColor = c;
+    };
+    grid.appendChild(d);
+  });
+}
+initColors();
+
+// Firebase 로드 완료
+document.getElementById('loading').style.display = 'none';
+document.getElementById('setup-screen').style.display = 'flex';
+
+// 새 방 만들기
+window.createRoom = () => {
+  const name = document.getElementById('input-name').value.trim();
+  if (!name) { showToast('이름을 입력해주세요'); return; }
+  myName = name;
+  roomCode = Math.random().toString(36).substring(2, 7).toUpperCase();
+  enterBoard();
+};
+
+// 방 참여
+window.joinRoom = () => {
+  const name = document.getElementById('input-name').value.trim();
+  const code = document.getElementById('input-room').value.trim().toUpperCase();
+  if (!name) { showToast('이름을 입력해주세요'); return; }
+  if (!code)  { showToast('방 코드를 입력해주세요'); return; }
+  myName = name;
+  roomCode = code;
+  enterBoard();
+};
+
+function enterBoard() {
+  localStorage.setItem('fb_name', myName);
+  localStorage.setItem('fb_color', myColor);
+  localStorage.setItem('fb_room', roomCode);
+
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('main-screen').style.display = 'flex';
+  document.getElementById('me-dot').style.background = myColor;
+  document.getElementById('me-name').textContent = myName;
+  document.getElementById('room-chip').textContent = '📋 ' + roomCode;
+  document.getElementById('input-hint').textContent = '방 코드: ' + roomCode + '  ·  상단 코드 탭 → 복사';
+
+  document.getElementById('input-hint').textContent = '';  // hint는 HTML에서 직접 설정
+
+  setupPresence();
+  listenItems();
+
+  // ✏️ 수정 버튼 이벤트 위임
+  document.getElementById('board-body').addEventListener('click', e => {
+    const btn = e.target.closest('.btn-edit');
+    if (!btn) return;
+    const id = btn.dataset.id;
+    const item = itemsMap[id];
+    if (item) editItem(id, item.text);
+  });
+
+  const ta = document.getElementById('memo-input');
+  ta.addEventListener('input', () => {
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 130) + 'px';
+  });
+  // Enter = 줄바꿈, 전송은 버튼으로만
+  ta.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault(); sendMemo();
+    }
+    // 일반 Enter는 기본 동작(줄바꿈) 허용
+  });
+}
+
+// Presence
+function setupPresence() {
+  presenceRef = ref(db, `rooms/${roomCode}/members/${myName}`);
+  set(presenceRef, { color: myColor, online: true });
+  onDisconnect(presenceRef).update({ online: false });
+
+  onValue(ref(db, `rooms/${roomCode}/members`), snap => {
+    renderMembers(snap.val() || {});
+  });
+
+  onValue(ref(db, '.info/connected'), snap => {
+    const ok = snap.val();
+    document.getElementById('conn-dot').className = 'status-dot ' + (ok ? 'connected' : 'disconnected');
+    document.getElementById('conn-label').textContent = ok ? '실시간 연결됨' : '재연결 중...';
+    if (ok && presenceRef) {
+      set(presenceRef, { color: myColor, online: true });
+      onDisconnect(presenceRef).update({ online: false });
+    }
+  });
+}
+
+function renderMembers(members) {
+  const bar = document.getElementById('members-bar');
+  const firstChip = bar.querySelector('.member-chip');
+  bar.innerHTML = '';
+  if (firstChip) bar.appendChild(firstChip);
+  Object.entries(members).forEach(([name, info]) => {
+    const chip = document.createElement('div');
+    chip.className = 'member-chip';
+    chip.style.opacity = info.online ? '1' : '0.45';
+    chip.innerHTML = `<div class="m-dot" style="background:${info.color||'#999'}"></div><span>${esc(name)}${info.online?'':' (오프라인)'}</span>`;
+    bar.appendChild(chip);
+  });
+}
+
+// 메모 리스닝
+function listenItems() {
+  onValue(ref(db, `rooms/${roomCode}/items`), snap => {
+    const data = snap.val() || {};
+    const items = Object.entries(data)
+      .map(([id, v]) => ({ id, ...v }))
+      .sort((a, b) => (b.ts || 0) - (a.ts || 0));
+
+    if (itemCount > 0 && items.length > itemCount) {
+      const newest = items[0];
+      if (newest.author !== myName) showToast(`${newest.author}님이 새 메모를 추가했어요!`);
+    }
+    itemCount = items.length;
+    // itemsMap 갱신
+    itemsMap = {};
+    items.forEach(item => { itemsMap[item.id] = item; });
+    renderItems(items);
+  });
+}
+
+// 메모 전송
+window.sendMemo = async () => {
+  const ta = document.getElementById('memo-input');
+  const text = ta.value.trim();
+  if (!text) return;
+  await push(ref(db, `rooms/${roomCode}/items`), {
+    author: myName, color: myColor, text, ts: Date.now()
+  });
+  ta.value = '';
+  ta.style.height = 'auto';
+};
+
+// 메모 삭제
+window.deleteItem = async (id) => {
+  await remove(ref(db, `rooms/${roomCode}/items/${id}`));
+};
+
+// 메모 수정 모달
+let editingId = null;
+
+window.editItem = (id, currentText) => {
+  editingId = id;
+  // 모달 생성
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'edit-modal';
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <div class="modal-title">✏️ 메모 수정</div>
+      <textarea class="modal-textarea" id="edit-textarea">${currentText}</textarea>
+      <div class="modal-btns">
+        <button class="btn-cancel" onclick="closeEditModal()">취소</button>
+        <button class="btn-primary" onclick="saveEdit()">저장</button>
+      </div>
+    </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeEditModal(); });
+  document.body.appendChild(overlay);
+  const ta = document.getElementById('edit-textarea');
+  ta.focus();
+  ta.setSelectionRange(ta.value.length, ta.value.length);
+};
+
+window.closeEditModal = () => {
+  const modal = document.getElementById('edit-modal');
+  if (modal) modal.remove();
+  editingId = null;
+};
+
+window.saveEdit = async () => {
+  const ta = document.getElementById('edit-textarea');
+  const newText = ta.value.trim();
+  if (!newText) { showToast('내용을 입력해주세요'); return; }
+  if (!editingId) return;
+  const itemRef = ref(db, `rooms/${roomCode}/items/${editingId}`);
+  await set(itemRef, {
+    author: myName, color: myColor,
+    text: newText, ts: Date.now(), edited: true
+  });
+  closeEditModal();
+  showToast('수정됐어요!');
+};
+
+// 메모 렌더링
+function renderItems(items) {
+  const body = document.getElementById('board-body');
+  if (items.length === 0) {
+    body.innerHTML = `<div class="empty-state"><span class="empty-icon">✏️</span>아직 내용이 없어요<br>아래에서 첫 메모를 남겨보세요</div>`;
+    return;
+  }
+  body.innerHTML = '';
+  items.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'memo-card';
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="card-author">
+          <div class="author-stripe" style="background:${item.color}"></div>
+          <span class="author-name" style="color:${item.color}">${esc(item.author)}</span>
+        </div>
+        <div class="card-meta">
+          <span class="card-time">${fmtTime(item.ts)}${item.edited ? ' <span style="font-size:10px;color:var(--text-sub)">(수정됨)</span>' : ''}</span>
+          <button class="btn-edit" data-id="${item.id}">✏️</button>
+          ${item.author === myName ? `<button class="btn-delete" onclick="deleteItem('${item.id}')">×</button>` : ''}
+        </div>
+      </div>
+      <div class="card-text">${esc(item.text)}</div>`;
+    body.appendChild(card);
+  });
+}
+
+window.copyCode = () => {
+  navigator.clipboard.writeText(roomCode)
+    .then(() => showToast('방 코드 복사됨: ' + roomCode))
+    .catch(() => showToast('방 코드: ' + roomCode));
+};
+
+function fmtTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts), now = new Date();
+  const hh = d.getHours().toString().padStart(2,'0');
+  const mm = d.getMinutes().toString().padStart(2,'0');
+  return d.toDateString() === now.toDateString()
+    ? hh + ':' + mm
+    : `${d.getMonth()+1}/${d.getDate()} ${hh}:${mm}`;
+}
+
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\n/g,'<br>');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// 자동 로그인 (이전 세션 복원)
+const sName = localStorage.getItem('fb_name');
+const sColor = localStorage.getItem('fb_color');
+const sRoom = localStorage.getItem('fb_room');
+if (sName && sColor && sRoom) {
+  myName = sName; myColor = sColor; roomCode = sRoom;
+  enterBoard();
+}
+</script>
+</body>
+</html>
