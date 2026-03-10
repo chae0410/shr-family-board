@@ -398,6 +398,7 @@
   .slot-tooltip-overlay {
     position: fixed; inset: 0;
     z-index: 105; background: transparent;
+    pointer-events: auto;
   }
   .slot-tooltip {
     position: fixed;
@@ -410,7 +411,7 @@
     min-width: 120px; max-width: 200px;
     z-index: 106;
     animation: popIn 0.15s ease;
-    pointer-events: none;
+    pointer-events: auto;
   }
   .slot-tooltip::after {
     content: '';
@@ -961,10 +962,12 @@ function renderSchedule() {
     const onEnd = (e) => {
       clearTimeout(timer);
       if (!longFired) {
-        // 짧은 탭 처리
-        const existing = document.getElementById('slot-tooltip-overlay');
-        if (existing) { existing.remove(); return; }
-        showSlotTooltip(el.dataset.id, el);
+        // 짧은 탭 처리 - 살짝 딜레이 줘서 이벤트 충돌 방지
+        setTimeout(() => {
+          const existing = document.getElementById('slot-tooltip-overlay');
+          if (existing) { existing.remove(); return; }
+          showSlotTooltip(el.dataset.id, el);
+        }, 10);
       }
       longFired = false;
     };
