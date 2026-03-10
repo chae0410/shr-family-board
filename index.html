@@ -320,10 +320,10 @@
   .schedule-table th.sun { color: #C0553C; }
   .schedule-table th.sat { color: #4A6FA5; }
   .schedule-table td {
-    vertical-align: top; padding: 1px 1px;
+    vertical-align: top; padding: 1px 1px 0px 1px;
   }
   .schedule-slot {
-    border-radius: 5px; padding: 2px 2px; margin-bottom: 2px;
+    border-radius: 5px; padding: 2px 2px; margin-bottom: 1px;
     cursor: pointer;
     user-select: none; -webkit-user-select: none;
     transition: opacity 0.15s;
@@ -394,8 +394,36 @@
     font-family: 'Noto Sans KR', sans-serif; cursor: pointer;
   }
 
-  /* 길게누르기 팝업 */
-  .slot-popup-overlay {
+  /* 짧게 탭 - 풍선 확대 팝업 */
+  .slot-tooltip-overlay {
+    position: fixed; inset: 0;
+    z-index: 105; background: transparent;
+  }
+  .slot-tooltip {
+    position: fixed;
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+    font-size: 13px; line-height: 1.6;
+    min-width: 120px; max-width: 200px;
+    z-index: 106;
+    animation: popIn 0.15s ease;
+    pointer-events: none;
+  }
+  .slot-tooltip::after {
+    content: '';
+    position: absolute; bottom: -7px; left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #fff;
+    border-bottom: none;
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.08));
+  }
+  .slot-tooltip .tt-time { font-size: 12px; color: var(--text-sub); }
+  .slot-tooltip .tt-name { font-weight: 700; font-size: 14px; color: var(--text); }
+  .slot-tooltip .tt-day  { font-size: 11px; color: var(--text-sub); }
     position: fixed; inset: 0; background: rgba(0,0,0,0.35);
     display: flex; align-items: center; justify-content: center;
     z-index: 110;
@@ -915,16 +943,30 @@ function renderSchedule() {
   // 길게누르기 이벤트
   tbody.querySelectorAll('.schedule-slot').forEach(el => {
     let timer;
-    el.addEventListener('touchstart', () => {
-      timer = setTimeout(() => openSlotPopup(el.dataset.id), 600);
-    }, {passive:true});
-    el.addEventListener('touchend', () => clearTimeout(timer));
-    el.addEventListener('touchmove', () => clearTimeout(timer));
-    // PC용
-    el.addEventListener('mousedown', () => {
-      timer = setTimeout(() => openSlotPopup(el.dataset.id), 600);
-    });
-    el.addEventListener('mouseup', () => clearTimeout(timer));
+    let isLong = false;
+
+    const startPress = (clientX, clientY) => {
+      isLong = false;
+      timer = setTimeout(() => {
+        isLong = true;
+        openSlotPopup(el.dataset.id);
+      }, 600);
+    };
+    const endPress = (clientX, clientY) => {
+      clearTimeout(timer);
+      if (!isLong) {
+        // 짧은 탭 → 툴팁
+        const existing = document.getElementById('slot-tooltip-overlay');
+        if (existing) { existing.remove(); return; }
+        showSlotTooltip(el.dataset.id, el);
+      }
+    };
+
+    el.addEventListener('touchstart', e => startPress(e.touches[0].clientX, e.touches[0].clientY), {passive:true});
+    el.addEventListener('touchend',   e => endPress(), {passive:true});
+    el.addEventListener('touchmove',  () => clearTimeout(timer), {passive:true});
+    el.addEventListener('mousedown',  e => startPress(e.clientX, e.clientY));
+    el.addEventListener('mouseup',    e => endPress(e.clientX, e.clientY));
   });
 }
 
@@ -1010,6 +1052,44 @@ window.saveSchedModal = async () => {
   }
   closeSchedModal();
 };
+
+// 짧은 탭 → 풍선 툴팁
+function showSlotTooltip(id, el) {
+  const s = schedules.find(x => x.id === id);
+  if (!s) return;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'slot-tooltip-overlay';
+  overlay.id = 'slot-tooltip-overlay';
+
+  const tooltip = document.createElement('div');
+  tooltip.className = 'slot-tooltip';
+  tooltip.innerHTML = `
+    <div class="tt-day">${DAYS[s.day]}요일</div>
+    <div class="tt-time">${pad(s.startH)}:${pad(s.startM)} ~ ${pad(s.endH)}:${pad(s.endM)}</div>
+    <div class="tt-name">${esc2(s.name)}</div>`;
+
+  overlay.appendChild(tooltip);
+  document.body.appendChild(overlay);
+
+  // 위치 계산 - 박스 위쪽에 표시
+  const rect = el.getBoundingClientRect();
+  const tw = 160;
+  let left = rect.left + rect.width/2 - tw/2;
+  let top  = rect.top - 10;
+
+  // 화면 밖으로 나가지 않도록
+  if (left < 8) left = 8;
+  if (left + tw > window.innerWidth - 8) left = window.innerWidth - tw - 8;
+  if (top < 60) top = rect.bottom + 10; // 위 공간 없으면 아래에 표시
+
+  tooltip.style.left = left + 'px';
+  tooltip.style.top  = top + 'px';
+  tooltip.style.width = tw + 'px';
+
+  // 오버레이 탭 시 닫기
+  overlay.addEventListener('click', () => overlay.remove());
+}
 
 // 길게 누르면 팝업
 function openSlotPopup(id) {
