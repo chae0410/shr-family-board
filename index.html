@@ -940,33 +940,40 @@ function renderSchedule() {
   }
   tbody.innerHTML = html;
 
-  // 길게누르기 이벤트
+  // 터치/클릭 이벤트 (짧게 탭 = 툴팁, 길게 누르기 = 수정/삭제)
   tbody.querySelectorAll('.schedule-slot').forEach(el => {
-    let timer;
-    let isLong = false;
+    let timer = null;
+    let longFired = false;
 
-    const startPress = (clientX, clientY) => {
-      isLong = false;
+    // 길게 누르기 시작
+    const onStart = (e) => {
+      e.preventDefault();
+      longFired = false;
       timer = setTimeout(() => {
-        isLong = true;
+        longFired = true;
         openSlotPopup(el.dataset.id);
-      }, 600);
+      }, 550);
     };
-    const endPress = (clientX, clientY) => {
+
+    // 손가락/마우스 뗌
+    const onEnd = (e) => {
       clearTimeout(timer);
-      if (!isLong) {
-        // 짧은 탭 → 툴팁
+      if (!longFired) {
+        // 짧은 탭 처리
         const existing = document.getElementById('slot-tooltip-overlay');
         if (existing) { existing.remove(); return; }
         showSlotTooltip(el.dataset.id, el);
       }
+      longFired = false;
     };
 
-    el.addEventListener('touchstart', e => startPress(e.touches[0].clientX, e.touches[0].clientY), {passive:true});
-    el.addEventListener('touchend',   e => endPress(), {passive:true});
-    el.addEventListener('touchmove',  () => clearTimeout(timer), {passive:true});
-    el.addEventListener('mousedown',  e => startPress(e.clientX, e.clientY));
-    el.addEventListener('mouseup',    e => endPress(e.clientX, e.clientY));
+    // 이동하면 길게누르기 취소
+    const onMove = () => { clearTimeout(timer); longFired = false; };
+
+    el.addEventListener('touchstart', onStart, {passive: false});
+    el.addEventListener('touchend',   onEnd,   {passive: false});
+    el.addEventListener('touchmove',  onMove,  {passive: true});
+    el.addEventListener('contextmenu', e => e.preventDefault());
   });
 }
 
