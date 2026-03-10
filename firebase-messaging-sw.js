@@ -11,22 +11,14 @@ firebase.initializeApp({
   appId: "1:822231408252:web:86e13ae5eb794999fbf3f9"
 });
 
+// FCM 백그라운드 메시지 수신 (Firebase Functions에서 보낸 알림만 처리)
 const messaging = firebase.messaging();
-
-// 백그라운드 메시지 수신
 messaging.onBackgroundMessage(payload => {
-  const { title, body } = payload.notification;
+  const { title, body } = payload.notification || {};
+  if (!title) return;
   self.registration.showNotification(title, {
-    body,
+    body: body || '',
     icon: './shrfamily.jpg',
     badge: './shrfamily.jpg',
-    vibrate: [200, 100, 200],
-    data: payload.data
   });
-});
-
-// 알림 클릭 시 앱 열기
-self.addEventListener('notificationclick', e => {
-  e.notification.close();
-  e.waitUntil(clients.openWindow('/'));
 });
