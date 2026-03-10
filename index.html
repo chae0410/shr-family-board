@@ -424,6 +424,9 @@
   .slot-tooltip .tt-time { font-size: 12px; color: var(--text-sub); }
   .slot-tooltip .tt-name { font-weight: 700; font-size: 14px; color: var(--text); }
   .slot-tooltip .tt-day  { font-size: 11px; color: var(--text-sub); }
+
+  /* 길게누르기 팝업 */
+  .slot-popup-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.35);
     display: flex; align-items: center; justify-content: center;
     z-index: 110;
@@ -947,7 +950,6 @@ function renderSchedule() {
 
     // 길게 누르기 시작
     const onStart = (e) => {
-      e.preventDefault();
       longFired = false;
       timer = setTimeout(() => {
         longFired = true;
