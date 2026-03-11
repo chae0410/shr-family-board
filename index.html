@@ -35,8 +35,82 @@
   }
 
   /* SETUP */
+  /* 시작 선택 화면 */
+  #landing-screen {
+    display: none; flex-direction: column; align-items: center;
+    justify-content: center; min-height: 100vh; padding: 40px 24px;
+  }
+  .landing-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 28px 24px; width: 100%; max-width: 390px;
+    display: flex; flex-direction: column; gap: 14px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  }
+  .landing-desc {
+    font-size: 13px; color: var(--text-sub); text-align: center; line-height: 1.6;
+  }
+  .btn-landing-create {
+    background: var(--accent); color: #fff; border: none; border-radius: 12px;
+    padding: 15px; font-size: 15px; font-weight: 700;
+    font-family: 'Noto Sans KR', sans-serif; cursor: pointer; width: 100%;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  .btn-landing-create:active { transform: scale(0.98); opacity: 0.9; }
+  .btn-landing-join {
+    background: transparent; color: var(--accent); border: 1.5px solid var(--accent);
+    border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 500;
+    font-family: 'Noto Sans KR', sans-serif; cursor: pointer; width: 100%;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .btn-landing-join:active { transform: scale(0.98); background: var(--accent-light); }
+
+  /* 방 만들기 화면 */
+  #create-screen {
+    display: none; flex-direction: column; align-items: center;
+    justify-content: center; min-height: 100vh; padding: 40px 24px;
+  }
+
+  /* 방 이름+사진 미리보기 (참여 화면 상단) */
+  .room-preview {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 8px; margin-bottom: 4px;
+  }
+  .room-preview img {
+    width: 72px; height: 72px; border-radius: 50%; object-fit: cover;
+    border: 3px solid var(--accent); box-shadow: 0 2px 12px rgba(61,107,79,0.2);
+  }
+  .room-preview-name {
+    font-family: 'Gowun Dodum', sans-serif; font-size: 20px;
+    color: var(--accent); font-weight: 700;
+  }
+  .room-preview-sub { font-size: 12px; color: var(--text-sub); }
+
+  /* 사진 업로드 */
+  .photo-upload-wrap {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .photo-preview {
+    width: 56px; height: 56px; border-radius: 50%; object-fit: cover;
+    border: 2px solid var(--border); flex-shrink: 0; background: var(--bg);
+  }
+  .btn-photo-upload {
+    flex: 1; background: var(--bg); color: var(--accent);
+    border: 1.5px dashed var(--accent); border-radius: 10px;
+    padding: 10px; font-size: 13px; font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer; text-align: center; transition: background 0.15s;
+  }
+  .btn-photo-upload:active { background: var(--accent-light); }
+
+  /* 뒤로가기 버튼 */
+  .btn-back {
+    background: none; border: none; color: var(--text-sub);
+    font-size: 13px; font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer; padding: 4px 0; display: flex; align-items: center; gap: 4px;
+    margin-bottom: 8px; align-self: flex-start;
+  }
+
   #setup-screen {
-    display: flex;
+    display: none;
     flex-direction: column;
     align-items: center;
     justify-content: center;
@@ -87,8 +161,6 @@
   }
   .color-dot.selected { border-color: var(--text); transform: scale(1.18); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
 
-  .divider { display: flex; align-items: center; gap: 12px; color: var(--text-sub); font-size: 12px; font-weight: 500; }
-  .divider::before,.divider::after { content:''; flex:1; height:1px; background:var(--border); }
 
   .btn-primary {
     background: var(--accent); color: #fff; border: none; border-radius: 12px;
@@ -96,15 +168,6 @@
     cursor: pointer; width: 100%; transition: opacity 0.2s, transform 0.1s;
   }
   .btn-primary:active { transform: scale(0.98); opacity: 0.9; }
-
-  .btn-outline {
-    background: transparent; color: var(--accent); border: 1.5px solid var(--accent);
-    border-radius: 12px; padding: 13px; font-size: 15px; font-weight: 500;
-    font-family: 'Noto Sans KR', sans-serif; cursor: pointer; width: 100%;
-    transition: background 0.2s, color 0.2s, transform 0.1s;
-  }
-  .btn-outline:active { transform: scale(0.98); }
-  .btn-outline:hover { background: var(--accent-light); }
 
   .join-row { display: flex; gap: 8px; }
   .join-row .text-input { flex: 1; }
@@ -223,10 +286,10 @@
   .modal-box {
     background: var(--surface); border-radius: 20px 20px 0 0;
     padding: 20px 16px 36px; width: 100%;
-    animation: slideUp 0.25s ease;
+    animation: slideUpFull 0.25s ease;
     display: flex; flex-direction: column; gap: 12px;
   }
-  @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+  @keyframes slideUpFull { from{transform:translateY(100%)} to{transform:translateY(0)} }
   .modal-title { font-size: 14px; font-weight: 700; color: var(--text-sub); letter-spacing: 0.05em; }
   .modal-textarea {
     width: 100%; border: 1.5px solid var(--border); border-radius: 12px;
@@ -274,7 +337,9 @@
     transform: translateX(-50%) translateY(10px);
     background: rgba(42,40,36,0.9); color: #fff; font-size: 13px;
     padding: 9px 20px; border-radius: 22px; z-index: 100; opacity: 0;
-    transition: opacity 0.28s, transform 0.28s; pointer-events: none; white-space: nowrap;
+    transition: opacity 0.28s, transform 0.28s; pointer-events: none;
+    white-space: pre-wrap; word-break: keep-all;
+    max-width: calc(100vw - 48px); text-align: center;
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -361,7 +426,7 @@
     animation: slideUp 0.22s ease;
   }
   @keyframes slideUp { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
-  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  /* fadeIn은 위(296줄)에서 선언됨 */
   .sched-modal-title { font-size: 16px; font-weight: 700; color: var(--text); }
   .sched-field-label { font-size: 11px; font-weight: 700; color: var(--text-sub); margin-bottom: 6px; display: block; }
   .sched-select {
@@ -398,7 +463,6 @@
   .slot-tooltip-overlay {
     position: fixed; inset: 0;
     z-index: 105; background: transparent;
-    pointer-events: auto;
   }
   .slot-tooltip {
     position: fixed;
@@ -411,7 +475,7 @@
     min-width: 120px; max-width: 200px;
     z-index: 106;
     animation: popIn 0.15s ease;
-    pointer-events: auto;
+    pointer-events: none;
   }
   .slot-tooltip::after {
     content: '';
@@ -467,35 +531,87 @@
 </div>
 
 <!-- SETUP -->
-<div id="setup-screen" style="display:none;">
+<!-- 시작 선택 화면 -->
+<div id="landing-screen" style="display:none;">
   <div class="logo-wrap">
-    <img src="shrfamily.jpg" style="width:64px;height:64px;border-radius:50%;object-fit:cover;margin-bottom:8px;border:3px solid var(--accent);box-shadow:0 2px 12px rgba(61,107,79,0.2);" alt="가족사진">
-    <div class="logo-title">이안이네 가족</div>
+    <span class="logo-icon">🏠</span>
+    <div class="logo-title">우리 가족 공유판</div>
     <div class="logo-sub">가족 모두가 함께 보는 실시간 메모장</div>
   </div>
-  <div class="setup-card">
-    <div>
-      <span class="field-label">내 이름</span>
-      <input class="text-input" id="input-name" placeholder="예: 아빠, 엄마, 딸..." maxlength="10">
+  <div class="landing-card">
+    <p class="landing-desc">새 가족 방을 만들거나<br>초대받은 방에 참여하세요</p>
+    <button class="btn-landing-create" onclick="showCreateScreen()">✚ 새 방 만들기</button>
+    <button class="btn-landing-join" onclick="showJoinScreen()">🔑 기존 방 참여하기</button>
+  </div>
+</div>
+
+<!-- 새 방 만들기 화면 -->
+<div id="create-screen" style="display:none;">
+  <div style="width:100%;max-width:390px;display:flex;flex-direction:column;align-items:stretch;">
+    <button class="btn-back" onclick="showLanding()">← 뒤로</button>
+    <div class="logo-wrap" style="margin-bottom:20px;">
+      <div class="logo-title">새 방 만들기</div>
+      <div class="logo-sub">우리 가족만의 공간을 만들어보세요</div>
     </div>
-    <div>
-      <span class="field-label">내 색상</span>
-      <div class="color-grid" id="color-grid"></div>
+    <div class="setup-card">
+      <div>
+        <span class="field-label">방 이름</span>
+        <input class="text-input" id="create-room-name" placeholder="예: 이안이네 가족, 김씨 가족..." maxlength="15">
+      </div>
+      <div>
+        <span class="field-label">방 사진</span>
+        <div class="photo-upload-wrap">
+          <img id="create-photo-preview" class="photo-preview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 56'%3E%3Crect width='56' height='56' fill='%23F0EDE8'/%3E%3Ctext x='28' y='35' text-anchor='middle' font-size='22'%3E📷%3C/text%3E%3C/svg%3E" alt="미리보기">
+          <label class="btn-photo-upload">
+            📷 사진 선택
+            <input type="file" id="create-photo-input" accept="image/*" style="display:none;" onchange="previewPhoto(this)">
+          </label>
+        </div>
+      </div>
+      <div>
+        <span class="field-label">내 이름</span>
+        <input class="text-input" id="create-name" placeholder="예: 아빠, 엄마, 딸..." maxlength="10">
+      </div>
+      <div>
+        <span class="field-label">내 색상</span>
+        <div class="color-grid" id="color-grid-create"></div>
+      </div>
+      <button class="btn-primary" onclick="createRoom()">방 만들기 →</button>
     </div>
-    <div class="divider">방 선택</div>
-    <div>
-      <span class="field-label">방 코드로 참여</span>
-      <div class="join-row">
-        <input class="text-input" id="input-room" placeholder="방 코드 입력..." maxlength="10" style="text-transform:uppercase;">
-        <button class="btn-join" onclick="joinRoom()">참여 →</button>
+  </div>
+</div>
+
+<!-- 기존 방 참여 화면 (setup-screen) -->
+<div id="setup-screen" style="display:none;">
+  <div style="width:100%;max-width:390px;display:flex;flex-direction:column;align-items:stretch;">
+    <button class="btn-back" id="join-back-btn" onclick="showLanding()">← 뒤로</button>
+    <div class="room-preview" id="join-room-preview">
+      <img id="join-room-photo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72'%3E%3Crect width='72' height='72' fill='%23F0EDE8'/%3E%3Ctext x='36' y='45' text-anchor='middle' font-size='28'%3E🏠%3C/text%3E%3C/svg%3E" alt="방 사진">
+      <div class="room-preview-name" id="join-room-name-display">방 코드를 입력하세요</div>
+      <div class="room-preview-sub" id="join-room-sub">방 코드를 입력하면 방 정보가 표시됩니다</div>
+    </div>
+    <div class="setup-card">
+      <div>
+        <span class="field-label">내 이름</span>
+        <input class="text-input" id="input-name" placeholder="예: 아빠, 엄마, 딸..." maxlength="10">
+      </div>
+      <div>
+        <span class="field-label">내 색상</span>
+        <div class="color-grid" id="color-grid"></div>
+      </div>
+      <div>
+        <span class="field-label">방 코드</span>
+        <div class="join-row">
+          <input class="text-input" id="input-room" placeholder="방 코드 입력..." maxlength="10" style="text-transform:uppercase;" oninput="lookupRoom(this.value)">
+          <button class="btn-join" onclick="joinRoom()">참여 →</button>
+        </div>
       </div>
     </div>
-    <button class="btn-outline" onclick="createRoom()">✚ 새 방 만들기</button>
   </div>
 </div>
 
 <!-- MAIN -->
-<div id="main-screen">
+<div id="main-screen" style="display:none;">
   <div class="top-bar">
     <div class="top-left">
       <img src="shrfamily.jpg" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);" alt="가족사진">
@@ -554,7 +670,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
-  getDatabase, ref, push, onValue, remove, set, onDisconnect, serverTimestamp
+  getDatabase, ref, push, onValue, remove, set, onDisconnect
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 import {
   getMessaging, getToken, onMessage
@@ -582,6 +698,7 @@ const MEMBER_PHOTOS = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 let messaging = null;
+let pushInitialized = false; // onMessage 중복 등록 방지
 
 const COLORS = [
   '#3D6B4F','#C0553C','#4A6FA5','#A0672A',
@@ -589,40 +706,32 @@ const COLORS = [
 ];
 
 let myName = '', myColor = COLORS[0], roomCode = '';
+let roomInfo = { roomName: '', photoData: '' };
 let itemCount = 0;
 let presenceRef = null;
 let itemsMap = {};
 let fcmToken = null;
 
 // 색상 선택기
-function initColors() {
-  const grid = document.getElementById('color-grid');
-  COLORS.forEach((c, i) => {
-    const d = document.createElement('div');
-    d.className = 'color-dot' + (i === 0 ? ' selected' : '');
-    d.style.background = c;
-    d.onclick = () => {
-      document.querySelectorAll('.color-dot').forEach(x => x.classList.remove('selected'));
-      d.classList.add('selected');
-      myColor = c;
-    };
-    grid.appendChild(d);
-  });
-}
-initColors();
+// 색상 선택기 초기화는 각 화면 진입 시 initColorGrid()로 처리
 
 // Service Worker 등록 + FCM 초기화
 async function initPush() {
   if (!('serviceWorker' in navigator)) return;
   try {
     const reg = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
-    messaging = getMessaging(app);
+    if (!messaging) {
+      messaging = getMessaging(app);
+    }
 
-    // 포그라운드 메시지 수신
-    onMessage(messaging, payload => {
-      const { title, body } = payload.notification;
-      showToast(`🔔 ${body}`);
-    });
+    // 포그라운드 메시지 수신 - 최초 1회만 등록
+    if (!pushInitialized) {
+      onMessage(messaging, payload => {
+        const body = payload?.notification?.body || payload?.data?.body;
+        if (body) showToast(`🔔 ${body}`);
+      });
+      pushInitialized = true;
+    }
 
     // 알림 권한 요청
     const permission = await Notification.requestPermission();
@@ -643,46 +752,283 @@ async function initPush() {
 
 // Firebase 로드 완료
 document.getElementById('loading').style.display = 'none';
-document.getElementById('setup-screen').style.display = 'flex';
+
+// 색상 선택기 - 화면 진입 시 항상 첫 번째 색상으로 초기화
+function initColorGrid(gridId) {
+  const grid = document.getElementById(gridId);
+  if (!grid) return;
+  grid.innerHTML = '';
+  myColor = COLORS[0]; // 이전 세션 색상 잔류 방지
+  COLORS.forEach((c, i) => {
+    const d = document.createElement('div');
+    d.className = 'color-dot' + (i === 0 ? ' selected' : '');
+    d.style.background = c;
+    d.dataset.grid = gridId;
+    d.onclick = () => {
+      document.querySelectorAll(`.color-dot[data-grid="${gridId}"]`).forEach(x => x.classList.remove('selected'));
+      d.classList.add('selected');
+      myColor = c;
+    };
+    grid.appendChild(d);
+  });
+}
+
+// 화면 전환 함수
+window.showLanding = () => {
+  document.getElementById('landing-screen').style.display = 'flex';
+  document.getElementById('create-screen').style.display = 'none';
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('main-screen').style.display = 'none';
+};
+
+window.showCreateScreen = () => {
+  document.getElementById('landing-screen').style.display = 'none';
+  document.getElementById('create-screen').style.display = 'flex';
+  initColorGrid('color-grid-create');
+  // 이전 입력값 초기화
+  document.getElementById('create-room-name').value = '';
+  document.getElementById('create-name').value = '';
+  document.getElementById('create-photo-input').value = '';
+  const defaultSrc = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 56'%3E%3Crect width='56' height='56' fill='%23F0EDE8'/%3E%3Ctext x='28' y='35' text-anchor='middle' font-size='22'%3E📷%3C/text%3E%3C/svg%3E`;
+  document.getElementById('create-photo-preview').src = defaultSrc;
+  // 방 만들기 버튼 상태 복원 (이전 시도 실패 후 재진입 대비)
+  const btn = document.querySelector('#create-screen .btn-primary');
+  if (btn) { btn.disabled = false; btn.textContent = '방 만들기 →'; }
+};
+
+window.showJoinScreen = () => {
+  document.getElementById('landing-screen').style.display = 'none';
+  document.getElementById('setup-screen').style.display = 'flex';
+  initColorGrid('color-grid');
+  // 매 진입 시 방 코드 입력 & 미리보기 초기화 (이전 입력값 잔류 방지)
+  document.getElementById('input-room').value = '';
+  document.getElementById('input-name').value = '';
+  document.getElementById('join-room-name-display').textContent = '방 코드를 입력하세요';
+  document.getElementById('join-room-sub').textContent = '방 코드를 입력하면 방 정보가 표시됩니다';
+  document.getElementById('join-room-photo').src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72'%3E%3Crect width='72' height='72' fill='%23F0EDE8'/%3E%3Ctext x='36' y='45' text-anchor='middle' font-size='28'%3E🏠%3C/text%3E%3C/svg%3E`;
+  // 참여 버튼 상태 복원 (이전 실패 후 재진입 대비)
+  const btn = document.querySelector('#setup-screen .btn-join');
+  if (btn) { btn.disabled = false; btn.textContent = '참여 →'; }
+};
+
+// 방 코드 입력 시 방 정보 미리보기 (debounce 300ms + try-catch)
+let lookupTimer = null;
+window.lookupRoom = (rawCode) => {
+  clearTimeout(lookupTimer);
+  const code = rawCode.trim().toUpperCase();
+  if (code.length < 4) {
+    document.getElementById('join-room-name-display').textContent = '방 코드를 입력하세요';
+    document.getElementById('join-room-sub').textContent = '방 코드를 입력하면 방 정보가 표시됩니다';
+    document.getElementById('join-room-photo').src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72'%3E%3Crect width='72' height='72' fill='%23F0EDE8'/%3E%3Ctext x='36' y='45' text-anchor='middle' font-size='28'%3E🏠%3C/text%3E%3C/svg%3E`;
+    return;
+  }
+  lookupTimer = setTimeout(async () => {
+    try {
+      const snap = await new Promise(res => onValue(ref(db, `rooms/${code}/info`), res, { onlyOnce: true }));
+      const info = snap.val();
+      if (info) {
+        document.getElementById('join-room-name-display').textContent = info.roomName || code;
+        document.getElementById('join-room-sub').textContent = '가족 방에 참여합니다';
+        if (info.photoData) document.getElementById('join-room-photo').src = info.photoData;
+      } else {
+        document.getElementById('join-room-name-display').textContent = code;
+        document.getElementById('join-room-sub').textContent = '⚠️ 방 정보 없음 — 코드를 다시 확인해주세요';
+      }
+    } catch (e) {
+      document.getElementById('join-room-sub').textContent = '⚠️ 방 정보를 불러오지 못했어요';
+    }
+  }, 300);
+};
+
+// 이미지 리사이즈 (canvas, 최대 400px, quality 0.7)
+function resizeImage(file, maxSize = 400, quality = 0.7) {
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onerror = () => rej(new Error('파일 읽기 실패'));
+    reader.onload = e => {
+      const img = new Image();
+      img.onerror = () => rej(new Error('이미지 로드 실패'));
+      img.onload = () => {
+        const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        res(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// 사진 미리보기
+window.previewPhoto = async (input) => {
+  const file = input.files[0];
+  if (!file) return;
+  try {
+    const resized = await resizeImage(file);
+    document.getElementById('create-photo-preview').src = resized;
+  } catch (e) {
+    showToast('⚠️ 이미지를 불러올 수 없어요. 다른 파일을 선택해주세요');
+    input.value = '';
+  }
+};
 
 // 새 방 만들기
-window.createRoom = () => {
-  const name = document.getElementById('input-name').value.trim();
-  if (!name) { showToast('이름을 입력해주세요'); return; }
-  myName = name;
-  roomCode = Math.random().toString(36).substring(2, 7).toUpperCase();
-  enterBoard();
+window.createRoom = async () => {
+  const roomName = document.getElementById('create-room-name').value.trim();
+  const name = document.getElementById('create-name').value.trim();
+
+  // 입력 검증 + 안내 메시지
+  if (!roomName) { showToast('⚠️ 방 이름을 입력해주세요'); return; }
+  if (roomName.length < 2) { showToast('⚠️ 방 이름은 두 글자 이상으로 입력해주세요'); return; }
+  if (!name) { showToast('⚠️ 내 이름을 입력해주세요'); return; }
+
+  // 버튼 연타 방지
+  const btn = document.querySelector('#create-screen .btn-primary');
+  if (btn.disabled) return;
+  btn.disabled = true;
+  btn.textContent = '방 만드는 중...';
+
+  try {
+    myName = name;
+    roomCode = Math.random().toString(36).substring(2, 7).toUpperCase();
+
+    // 사진 리사이즈 후 저장
+    const photoInput = document.getElementById('create-photo-input');
+    let photoData = '';
+    if (photoInput.files[0]) {
+      photoData = await resizeImage(photoInput.files[0]);
+    }
+
+    // 방 정보 Firebase에 저장
+    await set(ref(db, `rooms/${roomCode}/info`), {
+      roomName,
+      photoData,
+      createdAt: Date.now()
+    });
+
+    roomInfo = { roomName, photoData };
+    enterBoard();
+  } catch (e) {
+    showToast('⚠️ 방 만들기에 실패했어요. 잠시 후 다시 시도해주세요');
+    btn.disabled = false;
+    btn.textContent = '방 만들기 →';
+  }
 };
 
 // 방 참여
-window.joinRoom = () => {
+window.joinRoom = async () => {
   const name = document.getElementById('input-name').value.trim();
   const code = document.getElementById('input-room').value.trim().toUpperCase();
-  if (!name) { showToast('이름을 입력해주세요'); return; }
-  if (!code)  { showToast('방 코드를 입력해주세요'); return; }
-  myName = name;
-  roomCode = code;
-  enterBoard();
+
+  // 입력 검증 + 안내 메시지
+  if (!name) { showToast('⚠️ 이름을 입력해주세요'); return; }
+  if (!code) { showToast('⚠️ 방 코드를 입력해주세요'); return; }
+  if (code.length < 4) { showToast('⚠️ 방 코드는 최소 4자리예요'); return; }
+
+  // 버튼 연타 방지
+  const btn = document.querySelector('#setup-screen .btn-join');
+  if (btn.disabled) return;
+  btn.disabled = true;
+  btn.textContent = '확인 중...';
+
+  try {
+    // 방 전체 노드 확인 (info 없는 기존 방도 items/members로 존재 감지)
+    const roomSnap = await new Promise(res =>
+      onValue(ref(db, `rooms/${code}`), res, { onlyOnce: true })
+    );
+    if (!roomSnap.val()) {
+      showToast('❌ 존재하지 않는 방 코드예요.\n코드를 다시 확인해주세요');
+      btn.disabled = false;
+      btn.textContent = '참여 →';
+      return;
+    }
+    myName = name;
+    roomCode = code;
+    roomInfo = roomSnap.val().info || { roomName: code, photoData: '' };
+
+    // 동명이인 경고 (같은 방에 동일 이름 이미 접속 중인 경우)
+    const members = roomSnap.val().members || {};
+    if (members[name] && members[name].online) {
+      showToast(`⚠️ '${name}'은(는) 이미 접속 중이에요. 다른 이름을 사용하거나 그대로 입장하세요`);
+      // 경고만 표시하고 계속 진행 (강제 차단 안 함)
+    }
+    enterBoard();
+  } catch (e) {
+    showToast('⚠️ 연결에 실패했어요. 잠시 후 다시 시도해주세요');
+    btn.disabled = false;
+    btn.textContent = '참여 →';
+  }
 };
 
+// Firebase 리스너 unsubscribe 핸들 저장
+let unsubscribers = [];
+
+function cleanupListeners() {
+  unsubscribers.forEach(fn => { try { fn(); } catch(e) {} });
+  unsubscribers = [];
+}
+
 function enterBoard() {
+  // 이전 방 리스너 완전 정리 (연타, 재입장 시 중복 방지)
+  cleanupListeners();
+
+  // 재입장 시 모든 상태 초기화
+  itemCount = 0;
+  itemsMap = {};
+  editingId = null;
+  schedEditingId = null;
+  schedules = [];
+  schedColorMap = {};
+  schedColorIdx = 0;
+  // 열려있는 모달 정리
+  ['edit-modal','sched-modal','slot-popup','slot-tooltip-overlay'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  });
   localStorage.setItem('fb_name', myName);
   localStorage.setItem('fb_color', myColor);
   localStorage.setItem('fb_room', roomCode);
+  localStorage.setItem('fb_roomInfo', JSON.stringify(roomInfo));
 
+  document.getElementById('landing-screen').style.display = 'none';
+  document.getElementById('create-screen').style.display = 'none';
   document.getElementById('setup-screen').style.display = 'none';
   document.getElementById('main-screen').style.display = 'flex';
   document.getElementById('me-dot').style.background = myColor;
   document.getElementById('me-name').textContent = myName;
   document.getElementById('room-chip').textContent = '📋 ' + roomCode;
 
+  // 상단 방 사진/이름 업데이트
+  updateTopBar();
+
+  // 방 정보 실시간 감지
+  unsubscribers.push(onValue(ref(db, `rooms/${roomCode}/info`), snap => {
+    const info = snap.val();
+    if (info) {
+      roomInfo = info;
+      localStorage.setItem('fb_roomInfo', JSON.stringify(roomInfo));
+      updateTopBar();
+    } else if (!roomInfo.roomName) {
+      roomInfo = { roomName: roomCode, photoData: '' };
+      updateTopBar();
+    }
+  }));
+
   setupPresence();
   listenItems();
   listenSchedules();
-  initPush(); // 푸시 알림 초기화
+  initPush();
 
-  // 수정 / 완료 버튼 이벤트 위임
-  document.getElementById('board-body').addEventListener('click', e => {
+  // 이벤트 리스너 중복 방지 - 한 번만 등록
+  const boardBody = document.getElementById('board-body');
+  const newBoard = boardBody.cloneNode(false);
+  boardBody.parentNode.replaceChild(newBoard, boardBody);
+  // board-body 내용은 renderItems가 다시 채워줌
+
+  newBoard.addEventListener('click', e => {
     const editBtn = e.target.closest('.btn-edit');
     if (editBtn) {
       const item = itemsMap[editBtn.dataset.id];
@@ -693,11 +1039,13 @@ function enterBoard() {
   });
 
   const ta = document.getElementById('memo-input');
-  ta.addEventListener('input', () => {
-    ta.style.height = 'auto';
-    ta.style.height = Math.min(ta.scrollHeight, 130) + 'px';
+  const newTa = ta.cloneNode(true);
+  ta.parentNode.replaceChild(newTa, ta);
+  newTa.addEventListener('input', () => {
+    newTa.style.height = 'auto';
+    newTa.style.height = Math.min(newTa.scrollHeight, 130) + 'px';
   });
-  ta.addEventListener('keydown', e => {
+  newTa.addEventListener('keydown', e => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault(); sendMemo();
     }
@@ -710,11 +1058,11 @@ function setupPresence() {
   set(presenceRef, { color: myColor, online: true });
   onDisconnect(presenceRef).update({ online: false });
 
-  onValue(ref(db, `rooms/${roomCode}/members`), snap => {
+  unsubscribers.push(onValue(ref(db, `rooms/${roomCode}/members`), snap => {
     renderMembers(snap.val() || {});
-  });
+  }));
 
-  onValue(ref(db, '.info/connected'), snap => {
+  unsubscribers.push(onValue(ref(db, '.info/connected'), snap => {
     const ok = snap.val();
     document.getElementById('conn-dot').className = 'status-dot ' + (ok ? 'connected' : 'disconnected');
     document.getElementById('conn-label').textContent = ok ? '실시간 연결됨' : '재연결 중...';
@@ -722,7 +1070,7 @@ function setupPresence() {
       set(presenceRef, { color: myColor, online: true });
       onDisconnect(presenceRef).update({ online: false });
     }
-  });
+  }));
 }
 
 function renderMembers(members) {
@@ -741,7 +1089,7 @@ function renderMembers(members) {
 
 // 메모 리스닝
 function listenItems() {
-  onValue(ref(db, `rooms/${roomCode}/items`), snap => {
+  unsubscribers.push(onValue(ref(db, `rooms/${roomCode}/items`), snap => {
     const data = snap.val() || {};
     const items = Object.entries(data)
       .map(([id, v]) => ({ id, ...v }))
@@ -758,24 +1106,38 @@ function listenItems() {
   });
 }
 
-// 메모 전송 + 푸시 발송
+// 메모 전송
 window.sendMemo = async () => {
   const ta = document.getElementById('memo-input');
   const text = ta.value.trim();
   if (!text) return;
-
-  // Firebase에 메모 저장 (Functions가 신규 메모 감지해서 FCM 발송)
-  await push(ref(db, `rooms/${roomCode}/items`), {
-    author: myName, color: myColor, text, ts: Date.now()
-  });
-
-  ta.value = '';
-  ta.style.height = 'auto';
+  if (text.length > 500) {
+    showToast('⚠️ 메모는 500자 이하로 입력해주세요 (' + text.length + '/500)');
+    return;
+  }
+  const sendBtn = document.querySelector('.btn-send');
+  if (sendBtn && sendBtn.disabled) return;
+  if (sendBtn) sendBtn.disabled = true;
+  try {
+    await push(ref(db, `rooms/${roomCode}/items`), {
+      author: myName, color: myColor, text, ts: Date.now()
+    });
+    ta.value = '';
+    ta.style.height = 'auto';
+  } catch (e) {
+    showToast('⚠️ 메모 전송에 실패했어요. 네트워크를 확인해주세요');
+  } finally {
+    if (sendBtn) sendBtn.disabled = false;
+  }
 };
 
 // 메모 삭제
 window.deleteItem = async (id) => {
-  await remove(ref(db, `rooms/${roomCode}/items/${id}`));
+  try {
+    await remove(ref(db, `rooms/${roomCode}/items/${id}`));
+  } catch (e) {
+    showToast('⚠️ 삭제에 실패했어요. 다시 시도해주세요');
+  }
 };
 
 // 메모 수정 모달
@@ -786,10 +1148,11 @@ window.editItem = (id, currentText) => {
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.id = 'edit-modal';
+  // textarea 내용은 innerHTML이 아닌 .value로 주입 (XSS 방지)
   overlay.innerHTML = `
     <div class="modal-box">
       <div class="modal-title">✏️ 메모 수정</div>
-      <textarea class="modal-textarea" id="edit-textarea">${currentText}</textarea>
+      <textarea class="modal-textarea" id="edit-textarea"></textarea>
       <div class="modal-btns">
         <button class="btn-cancel" onclick="closeEditModal()">취소</button>
         <button class="btn-primary" onclick="saveEdit()">저장</button>
@@ -798,6 +1161,7 @@ window.editItem = (id, currentText) => {
   overlay.addEventListener('click', e => { if (e.target === overlay) closeEditModal(); });
   document.body.appendChild(overlay);
   const ta = document.getElementById('edit-textarea');
+  ta.value = currentText;   // safe: .value는 HTML 파싱 없이 순수 텍스트로 처리
   ta.focus();
   ta.setSelectionRange(ta.value.length, ta.value.length);
 };
@@ -811,30 +1175,40 @@ window.closeEditModal = () => {
 window.saveEdit = async () => {
   const ta = document.getElementById('edit-textarea');
   const newText = ta.value.trim();
-  if (!newText) { showToast('내용을 입력해주세요'); return; }
+  if (!newText) { showToast('⚠️ 내용을 입력해주세요'); return; }
   if (!editingId) return;
-  const itemRef = ref(db, `rooms/${roomCode}/items/${editingId}`);
-  await set(itemRef, {
-    author: myName, color: myColor,
-    text: newText, ts: Date.now(), edited: true
-  });
-  closeEditModal();
-  showToast('수정됐어요!');
+  const original = itemsMap[editingId];
+  if (!original) { showToast('⚠️ 메모를 찾을 수 없어요. 새로고침 후 다시 시도해주세요'); closeEditModal(); return; }
+
+  try {
+    const itemRef = ref(db, `rooms/${roomCode}/items/${editingId}`);
+    await set(itemRef, {
+      author: original.author,   // 원본 작성자 보존 (수정해도 작성자 안 바뀜)
+      color: original.color,     // 원본 색상 보존
+      text: newText,
+      ts: original.ts,           // 원본 작성시각 보존 (정렬 유지)
+      edited: true,
+      editedBy: myName,          // 누가 수정했는지 기록
+      editedAt: Date.now()
+    });
+    closeEditModal();
+    showToast('✏️ 수정됐어요!');
+  } catch (e) {
+    showToast('⚠️ 수정에 실패했어요. 다시 시도해주세요');
+  }
 };
 
-// 완료 토글
+// 완료 토글 - spread로 기존 필드 전체 보존
 window.toggleComplete = async (id) => {
   const item = itemsMap[id];
   if (!item) return;
+  const { id: _localId, ...itemData } = item; // 로컬 id 필드 제외
   const itemRef = ref(db, `rooms/${roomCode}/items/${id}`);
-  await set(itemRef, {
-    author: item.author,
-    color: item.color,
-    text: item.text,
-    ts: item.ts,
-    ...(item.edited ? { edited: true } : {}),
-    completed: !item.completed
-  });
+  try {
+    await set(itemRef, { ...itemData, completed: !item.completed });
+  } catch (e) {
+    showToast('⚠️ 완료 처리에 실패했어요. 다시 시도해주세요');
+  }
 };
 
 // 메모 렌더링
@@ -864,7 +1238,7 @@ function renderItems(items) {
           ${item.completed ? '<span class="completed-badge">✓ 완료</span>' : ''}
         </div>
         <div class="card-meta">
-          <span class="card-time">${fmtTime(item.ts)}${item.edited ? ' <span style="font-size:10px;color:var(--text-sub)">(수정됨)</span>' : ''}</span>
+          <span class="card-time">${fmtTime(item.ts)}${item.edited ? ` <span style="font-size:10px;color:var(--text-sub)">(${item.editedBy ? item.editedBy + josa(item.editedBy, '이', '가') + ' ' : ''}수정됨)</span>` : ''}</span>
           <button class="btn-complete" data-id="${item.id}" title="${item.completed ? '완료 취소' : '완료'}">${item.completed ? '↩' : '✓'}</button>
           <button class="btn-edit" data-id="${item.id}">✏️</button>
           ${item.author === myName ? `<button class="btn-delete" onclick="deleteItem('${item.id}')">×</button>` : ''}
@@ -896,7 +1270,7 @@ function getSchedColor(name) {
 
 // Firebase에서 시간표 리스닝
 function listenSchedules() {
-  onValue(ref(db, `rooms/${roomCode}/schedules`), snap => {
+  unsubscribers.push(onValue(ref(db, `rooms/${roomCode}/schedules`), snap => {
     const data = snap.val() || {};
     schedules = Object.entries(data).map(([id, v]) => ({ id, ...v }));
     // 색상맵 재구성
@@ -962,12 +1336,10 @@ function renderSchedule() {
     const onEnd = (e) => {
       clearTimeout(timer);
       if (!longFired) {
-        // 짧은 탭 처리 - 살짝 딜레이 줘서 이벤트 충돌 방지
-        setTimeout(() => {
-          const existing = document.getElementById('slot-tooltip-overlay');
-          if (existing) { existing.remove(); return; }
-          showSlotTooltip(el.dataset.id, el);
-        }, 10);
+        // 짧은 탭 처리
+        const existing = document.getElementById('slot-tooltip-overlay');
+        if (existing) { existing.remove(); return; }
+        showSlotTooltip(el.dataset.id, el);
       }
       longFired = false;
     };
@@ -979,6 +1351,10 @@ function renderSchedule() {
     el.addEventListener('touchend',   onEnd,   {passive: false});
     el.addEventListener('touchmove',  onMove,  {passive: true});
     el.addEventListener('contextmenu', e => e.preventDefault());
+    // PC/iPad 마우스 지원
+    el.addEventListener('mousedown', onStart);
+    el.addEventListener('mouseup',   onEnd);
+    el.addEventListener('mouseleave', onMove); // 드래그 중 이탈 시 타이머 취소
   });
 }
 
@@ -1051,18 +1427,27 @@ window.saveSchedModal = async () => {
   const eh    = parseInt(document.getElementById('sched-eh').value);
   const em    = parseInt(document.getElementById('sched-em').value);
   const name  = document.getElementById('sched-name').value.trim();
-  if (!name) { showToast('학원 이름을 입력해주세요'); return; }
-  if (sh*60+sm >= eh*60+em) { showToast('종료 시각이 시작 시각보다 늦어야 해요'); return; }
+  if (!name) { showToast('⚠️ 학원 이름을 입력해주세요'); return; }
+  if (sh*60+sm >= eh*60+em) { showToast('⚠️ 종료 시각이 시작 시각보다 늦어야 해요'); return; }
+
+  const saveBtn = document.querySelector('.btn-sched-save');
+  if (saveBtn && saveBtn.disabled) return;
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '저장 중...'; }
 
   const data = { day, startH:sh, startM:sm, endH:eh, endM:em, name };
-  if (schedEditingId) {
-    await set(ref(db, `rooms/${roomCode}/schedules/${schedEditingId}`), data);
-    showToast('수정됐어요!');
-  } else {
-    await push(ref(db, `rooms/${roomCode}/schedules`), data);
-    showToast('일정을 추가했어요!');
+  try {
+    if (schedEditingId) {
+      await set(ref(db, `rooms/${roomCode}/schedules/${schedEditingId}`), data);
+      showToast('✅ 수정됐어요!');
+    } else {
+      await push(ref(db, `rooms/${roomCode}/schedules`), data);
+      showToast('✅ 일정을 추가했어요!');
+    }
+    closeSchedModal();
+  } catch (e) {
+    showToast('⚠️ 저장에 실패했어요. 다시 시도해주세요');
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '저장'; }
   }
-  closeSchedModal();
 };
 
 // 짧은 탭 → 풍선 툴팁
@@ -1084,20 +1469,22 @@ function showSlotTooltip(id, el) {
   overlay.appendChild(tooltip);
   document.body.appendChild(overlay);
 
-  // 위치 계산 - 박스 위쪽에 표시
+  // 위치 계산 - DOM 렌더 후 실제 높이로 계산 (겹침 방지)
   const rect = el.getBoundingClientRect();
   const tw = 160;
   let left = rect.left + rect.width/2 - tw/2;
-  let top  = rect.top - 10;
-
-  // 화면 밖으로 나가지 않도록
-  if (left < 8) left = 8;
-  if (left + tw > window.innerWidth - 8) left = window.innerWidth - tw - 8;
-  if (top < 60) top = rect.bottom + 10; // 위 공간 없으면 아래에 표시
-
-  tooltip.style.left = left + 'px';
-  tooltip.style.top  = top + 'px';
+  tooltip.style.left = '-9999px'; // 일단 숨겨서 렌더링
   tooltip.style.width = tw + 'px';
+  // 다음 프레임에 실제 높이 확인 후 위치 확정
+  requestAnimationFrame(() => {
+    const tooltipH = tooltip.offsetHeight || 80;
+    let top = rect.top - tooltipH - 8; // 요소 위 8px 여백
+    if (left < 8) left = 8;
+    if (left + tw > window.innerWidth - 8) left = window.innerWidth - tw - 8;
+    if (top < 60) top = rect.bottom + 10; // 위 공간 없으면 아래 표시
+    tooltip.style.left = left + 'px';
+    tooltip.style.top  = top + 'px';
+  });
 
   // 오버레이 탭 시 닫기
   overlay.addEventListener('click', () => overlay.remove());
@@ -1116,12 +1503,20 @@ function openSlotPopup(id) {
         ${esc2(s.name)}
         <small>${DAYS[s.day]}요일 ${pad(s.startH)}:${pad(s.startM)} ~ ${pad(s.endH)}:${pad(s.endM)}</small>
       </div>
-      <button class="slot-popup-btn" onclick="closeSlotPopup();openSchedModal('${id}')">✏️ 수정</button>
-      <button class="slot-popup-btn danger" onclick="deleteSchedAll('${esc2(s.name)}')">🗑 '${esc2(s.name)}' 전체 삭제</button>
+      <button class="slot-popup-btn" id="slot-edit-btn">✏️ 수정</button>
+      <button class="slot-popup-btn danger" id="slot-del-btn">🗑 '${esc2(s.name)}' 전체 삭제</button>
       <button class="slot-popup-cancel" onclick="closeSlotPopup()">취소</button>
     </div>`;
   overlay.addEventListener('click', e => { if (e.target === overlay) closeSlotPopup(); });
   document.body.appendChild(overlay);
+  // data-* 방식으로 이름 전달 (싱글쿼트 등 특수문자 onclick 오류 방지)
+  document.getElementById('slot-edit-btn').addEventListener('click', () => {
+    closeSlotPopup();
+    openSchedModal(id);
+  });
+  document.getElementById('slot-del-btn').addEventListener('click', () => {
+    deleteSchedAll(s.name); // 직접 변수 참조 - 이스케이프 불필요
+  });
 }
 
 window.closeSlotPopup = () => {
@@ -1132,21 +1527,24 @@ window.closeSlotPopup = () => {
 window.deleteSchedAll = async (name) => {
   closeSlotPopup();
   const targets = schedules.filter(s => s.name === name);
-  await Promise.all(targets.map(s => remove(ref(db, `rooms/${roomCode}/schedules/${s.id}`))));
-  showToast(`'${name}' 일정을 모두 삭제했어요`);
+  try {
+    await Promise.all(targets.map(s => remove(ref(db, `rooms/${roomCode}/schedules/${s.id}`))));
+    showToast(`🗑 '${name}' 일정을 모두 삭제했어요`);
+  } catch (e) {
+    showToast('⚠️ 삭제에 실패했어요. 다시 시도해주세요');
+  }
 };
 // ===================== 학원 시간표 끝 =====================
 
 window.logout = () => {
-  // 오프라인 처리
   if (presenceRef) set(presenceRef, { color: myColor, online: false });
-  // 로컬 저장 삭제
+  cleanupListeners();
   localStorage.removeItem('fb_name');
   localStorage.removeItem('fb_color');
   localStorage.removeItem('fb_room');
-  // 화면 전환
+  localStorage.removeItem('fb_roomInfo');
   document.getElementById('main-screen').style.display = 'none';
-  document.getElementById('setup-screen').style.display = 'flex';
+  showLanding();
   showToast('로그아웃 됐어요');
 };
 
@@ -1172,20 +1570,61 @@ function esc(str) {
     .replace(/\n/g,'<br>');
 }
 
+// 한국어 조사 선택 (받침 있으면 batchim, 없으면 noBatchim)
+function josa(word, batchim, noBatchim) {
+  if (!word) return batchim;
+  const code = word.charCodeAt(word.length - 1);
+  // 한글 완성형 범위: 0xAC00 ~ 0xD7A3, 받침 여부: (code - 0xAC00) % 28 !== 0
+  if (code >= 0xAC00 && code <= 0xD7A3) {
+    return (code - 0xAC00) % 28 !== 0 ? batchim : noBatchim;
+  }
+  return batchim; // 한글 아닌 경우 기본값
+}
+
+let toastTimer = null;
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2800);
+  if (toastTimer) clearTimeout(toastTimer); // 이전 타이머 제거
+  toastTimer = setTimeout(() => {
+    t.classList.remove('show');
+    toastTimer = null;
+  }, 2800);
+}
+
+// 상단 바 방 사진/이름 업데이트
+// roomInfo.roomName이 roomCode 폴백이 아닌 실제 이름일 때만 덮어씀
+// → 이안이네 가족처럼 info 없는 기존 방은 HTML 하드코딩 타이틀 유지
+function updateTopBar() {
+  const hasRealName = roomInfo.roomName && roomInfo.roomName !== roomCode;
+  const photo = roomInfo.photoData || '';
+  const imgEl = document.querySelector('.top-bar .top-left img');
+  const titleEl = document.querySelector('.top-bar .board-title');
+  if (imgEl && photo) imgEl.src = photo;
+  if (titleEl && hasRealName) titleEl.textContent = roomInfo.roomName;
+  const schedTitle = document.querySelector('.schedule-title');
+  if (schedTitle && hasRealName) {
+    schedTitle.textContent = `📚 ${roomInfo.roomName} 학원 시간표`;
+  }
 }
 
 // 자동 로그인
-const sName = localStorage.getItem('fb_name');
+const sName  = localStorage.getItem('fb_name');
 const sColor = localStorage.getItem('fb_color');
-const sRoom = localStorage.getItem('fb_room');
+const sRoom  = localStorage.getItem('fb_room');
+const sRoomInfo = localStorage.getItem('fb_roomInfo');
 if (sName && sColor && sRoom) {
   myName = sName; myColor = sColor; roomCode = sRoom;
+  try {
+    roomInfo = sRoomInfo ? JSON.parse(sRoomInfo) : { roomName: sRoom, photoData: '' };
+  } catch (_) {
+    // localStorage 데이터 손상 시 폴백 (앱 crash 방지)
+    roomInfo = { roomName: sRoom, photoData: '' };
+  }
   enterBoard();
+} else {
+  showLanding();
 }
 </script>
 </body>
