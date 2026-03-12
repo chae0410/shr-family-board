@@ -1002,13 +1002,12 @@ function enterBoard() {
   document.getElementById('me-name').textContent = myName;
   document.getElementById('room-chip').textContent = '📋 ' + roomCode;
 
-  // 방 전환 시 이전 방 정보 초기화 (이름/사진 잔류 방지)
+  // 방 전환 시 화면 텍스트만 초기화 (manifest는 Firebase 로드 후 업데이트)
   const titleEl0 = document.querySelector('.top-bar .board-title');
   if (titleEl0) titleEl0.textContent = '';
   document.title = '가족 공유판';
   const appMeta = document.querySelector("meta[name='apple-mobile-web-app-title']");
   if (appMeta) appMeta.content = '';
-  updateManifest('가족 공유판', '');
 
   // 방 정보 실시간 감지 (첫 로드 시 즉시 업데이트 포함)
   unsubscribers.push(onValue(ref(db, `rooms/${roomCode}/info`), async snap => {
