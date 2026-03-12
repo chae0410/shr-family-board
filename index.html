@@ -952,7 +952,7 @@ window.joinRoom = async () => {
     // 동명이인 경고 (같은 방에 동일 이름 이미 접속 중인 경우)
     const members = roomSnap.val().members || {};
     if (members[name] && members[name].online) {
-      showToast(`⚠️ '${name}'은(는) 이미 접속 중이에요. 다른 이름을 사용하거나 그대로 입장하세요`);
+      showToast(`⚠️ '${name}'은/는 이미 접속 중이에요. 다른 이름을 사용하거나 그대로 입장하세요`);
       // 경고만 표시하고 계속 진행 (강제 차단 안 함)
     }
     enterBoard();
@@ -993,6 +993,7 @@ function enterBoard() {
   localStorage.setItem('fb_room', roomCode);
   localStorage.setItem('fb_roomInfo', JSON.stringify(roomInfo));
 
+  document.getElementById('loading').style.display = 'none'; // 자동로그인 경로 대비
   document.getElementById('landing-screen').style.display = 'none';
   document.getElementById('create-screen').style.display = 'none';
   document.getElementById('setup-screen').style.display = 'none';
@@ -1103,7 +1104,7 @@ function listenItems() {
     itemsMap = {};
     items.forEach(item => { itemsMap[item.id] = item; });
     renderItems(items);
-  });
+  }));
 }
 
 // 메모 전송
@@ -1278,7 +1279,7 @@ function listenSchedules() {
     const names = [...new Set(schedules.map(s => s.name))].sort();
     names.forEach(n => getSchedColor(n));
     renderSchedule();
-  });
+  }));
 }
 
 function renderSchedule() {
