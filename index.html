@@ -1599,14 +1599,29 @@ function showToast(msg) {
 // → 이안이네 가족처럼 info 없는 기존 방은 HTML 하드코딩 타이틀 유지
 function updateTopBar() {
   const hasRealName = roomInfo.roomName && roomInfo.roomName !== roomCode;
+  const displayName = hasRealName ? roomInfo.roomName : roomCode;
   const photo = roomInfo.photoData || '';
   const imgEl = document.querySelector('.top-bar .top-left img');
   const titleEl = document.querySelector('.top-bar .board-title');
   if (imgEl && photo) imgEl.src = photo;
-  if (titleEl && hasRealName) titleEl.textContent = roomInfo.roomName;
+  if (titleEl && hasRealName) titleEl.textContent = displayName;
   // 시간표 제목은 항상 고정 (방 이름 따라가지 않음)
   const schedTitle = document.querySelector('.schedule-title');
   if (schedTitle) schedTitle.textContent = '📚 주간 학원 일정표';
+  // 탭 제목 업데이트
+  document.title = displayName;
+  // 파비콘 업데이트 (방 사진 있으면 그 사진으로, 없으면 기본 유지)
+  if (photo) {
+    let link = document.querySelector("link[rel='apple-touch-icon']");
+    let favicon = document.querySelector("link[rel~='icon']");
+    if (link) link.href = photo;
+    if (!favicon) {
+      favicon = document.createElement('link');
+      favicon.rel = 'icon';
+      document.head.appendChild(favicon);
+    }
+    favicon.href = photo;
+  }
 }
 
 // 자동 로그인
