@@ -438,6 +438,7 @@
     border-radius: 5px; padding: 2px 2px; margin-bottom: 1px;
     cursor: pointer;
     user-select: none; -webkit-user-select: none;
+    touch-action: none; -webkit-touch-callout: none;
     transition: opacity 0.15s;
     text-align: center;
     display: flex; flex-direction: column;
@@ -1570,37 +1571,68 @@ function renderSchedule() {
     let longFired = false;
 
     // 길게 누르기 시작
-    const onStart = (e) => {
-      longFired = false;
-      timer = setTimeout(() => {
-        longFired = true;
-        openSlotPopup(el.dataset.id);
-      }, 550);
-    };
+    let touchStartX = 0, touchStartY = 0, touchMoved = false;
 
-    // 손가락/마우스 뗌
-    const onEnd = (e) => {
+    // ── touchstart: 좌표 기록 + 길게누르기 타이머 ──
+    el.addEventListener('touchstart', e => {
+      e.preventDefault(); // iOS 스크롤 변환 방지 (필수)
+      const t = e.touches[0];
+      touchStartX = t.clientX;
+      touchStartY = t.clientY;
+      touchMoved  = false;
+      longFired   = false;
+      timer = setTimeout(() => {
+        if (!touchMoved) {
+          longFired = true;
+          if (navigator.vibrate) navigator.vibrate(30);
+          openSlotPopup(el.dataset.id);
+        }
+      }, 500);
+    }, { passive: false });
+
+    // ── touchmove: 5px 이상 움직이면 탭 취소 ──
+    el.addEventListener('touchmove', e => {
+      const t = e.touches[0];
+      if (Math.abs(t.clientX - touchStartX) > 5 ||
+          Math.abs(t.clientY - touchStartY) > 5) {
+        touchMoved = true;
+        clearTimeout(timer);
+      }
+    }, { passive: true });
+
+    // ── touchend: 짧은 탭이면 툴팁 ──
+    el.addEventListener('touchend', e => {
+      e.preventDefault();
       clearTimeout(timer);
-      if (!longFired) {
-        // 짧은 탭 처리
+      if (!longFired && !touchMoved) {
         const existing = document.getElementById('slot-tooltip-overlay');
         if (existing) { existing.remove(); return; }
         showSlotTooltip(el.dataset.id, el);
       }
       longFired = false;
-    };
+    }, { passive: false });
 
-    // 이동하면 길게누르기 취소
-    const onMove = () => { clearTimeout(timer); longFired = false; };
+    el.addEventListener('touchcancel', () => {
+      clearTimeout(timer); longFired = false; touchMoved = false;
+    }, { passive: true });
 
-    el.addEventListener('touchstart', onStart, {passive: false});
-    el.addEventListener('touchend',   onEnd,   {passive: false});
-    el.addEventListener('touchmove',  onMove,  {passive: true});
     el.addEventListener('contextmenu', e => e.preventDefault());
-    // PC/iPad 마우스 지원
-    el.addEventListener('mousedown', onStart);
-    el.addEventListener('mouseup',   onEnd);
-    el.addEventListener('mouseleave', onMove); // 드래그 중 이탈 시 타이머 취소
+
+    // ── PC 마우스 지원 ──
+    el.addEventListener('mousedown', e => {
+      touchMoved = false; longFired = false;
+      timer = setTimeout(() => { longFired = true; openSlotPopup(el.dataset.id); }, 500);
+    });
+    el.addEventListener('mouseup', e => {
+      clearTimeout(timer);
+      if (!longFired && !touchMoved) {
+        const existing = document.getElementById('slot-tooltip-overlay');
+        if (existing) { existing.remove(); return; }
+        showSlotTooltip(el.dataset.id, el);
+      }
+      longFired = false;
+    });
+    el.addEventListener('mouseleave', () => { clearTimeout(timer); touchMoved = false; });
   });
 }
 
