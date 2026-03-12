@@ -1641,27 +1641,65 @@ function updateTopBar() {
   if (appTitleMeta) appTitleMeta.content = shownName;
 
   // 파비콘 + apple-touch-icon 업데이트
-  if (photo) {
-    const touchIcon = document.querySelector("link[rel='apple-touch-icon']");
-    if (touchIcon) touchIcon.href = photo;
-    let favicon = document.querySelector("link[rel='icon']");
-    if (!favicon) {
-      favicon = document.createElement('link');
-      favicon.rel = 'icon';
-      document.head.appendChild(favicon);
-    }
-    favicon.href = photo;
-  }
+  // base64 data URL → Blob URL 변환 (브라우저가 파비콘으로 인식하려면 Blob URL 필요)
+  setFavicon(photo || '');
 
   // manifest 동적 교체 (홈 바로가기 이름/아이콘)
   updateManifest(shownName, photo);
 }
 
+// base64 → Blob URL 변환 후 파비콘/touch-icon 교체
+let _faviconBlobUrl = '';
+function setFavicon(photoDataOrUrl) {
+  try {
+    const apply = (url) => {
+      // apple-touch-icon 교체 (태그 재생성으로 캐시 무효화)
+      const oldTouch = document.querySelector("link[rel='apple-touch-icon']");
+      const newTouch = document.createElement('link');
+      newTouch.rel = 'apple-touch-icon';
+      newTouch.href = url;
+      if (oldTouch) oldTouch.replaceWith(newTouch);
+      else document.head.appendChild(newTouch);
+      // favicon 교체
+      const oldFav = document.querySelector("link[rel='icon']");
+      const newFav = document.createElement('link');
+      newFav.rel = 'icon';
+      newFav.type = 'image/jpeg';
+      newFav.href = url;
+      if (oldFav) oldFav.replaceWith(newFav);
+      else document.head.appendChild(newFav);
+    };
+
+    if (!photoDataOrUrl) {
+      apply('shrfamily.jpg');
+      return;
+    }
+
+    if (photoDataOrUrl.startsWith('data:')) {
+      // base64 → Blob URL 변환
+      const [header, b64] = photoDataOrUrl.split(',');
+      const mime = header.match(/:(.*?);/)[1];
+      const bytes = atob(b64);
+      const arr = new Uint8Array(bytes.length);
+      for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+      const blob = new Blob([arr], { type: mime });
+      // 이전 Blob URL 해제
+      if (_faviconBlobUrl) URL.revokeObjectURL(_faviconBlobUrl);
+      _faviconBlobUrl = URL.createObjectURL(blob);
+      apply(_faviconBlobUrl);
+    } else {
+      apply(photoDataOrUrl);
+    }
+  } catch(e) {
+    console.log('파비콘 업데이트 오류:', e);
+  }
+}
+
 function updateManifest(name, iconDataUrl) {
   try {
-    const iconEntry = iconDataUrl
-      ? [{ src: iconDataUrl, sizes: '192x192', type: 'image/jpeg' }]
-      : [{ src: 'shrfamily.jpg', sizes: '192x192', type: 'image/jpeg' }];
+    // manifest 아이콘도 Blob URL 사용 (base64는 일부 브라우저에서 인식 안 됨)
+    const iconSrc = _faviconBlobUrl || iconDataUrl || 'shrfamily.jpg';
+    const iconEntry = [{ src: iconSrc, sizes: '192x192', type: 'image/jpeg' }];
     const manifest = {
       name: name,
       short_name: name,
