@@ -222,7 +222,54 @@
   .empty-state { text-align: center; color: var(--text-sub); font-size: 14px; margin-top: 80px; line-height: 2; }
   .empty-icon { font-size: 36px; display: block; margin-bottom: 8px; opacity: 0.4; }
 
+  /* ── 드래그 앤 드롭 ── */
   .memo-card {
+    touch-action: pan-y; /* 기본 스크롤 허용, 길게 누르기로 드래그 전환 */
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .memo-card.drag-source {
+    opacity: 0.4;
+    transform: scale(0.98);
+    transition: opacity 0.15s, transform 0.15s;
+  }
+  .memo-card.drag-over {
+    border: 2px dashed var(--accent);
+    background: var(--accent-light);
+    transform: scale(1.01);
+    transition: transform 0.1s;
+  }
+  .drag-ghost {
+    position: fixed;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0.92;
+    box-shadow: 0 8px 32px rgba(61,107,79,0.25);
+    border-radius: 16px;
+    background: var(--surface);
+    border: 2px solid var(--accent);
+    transform: rotate(1.5deg) scale(1.04);
+    transition: transform 0.1s;
+    max-width: 360px;
+    width: calc(100vw - 48px);
+    padding: 16px 18px;
+    font-size: 14px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .drag-handle-hint {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 11px;
+    color: var(--text-sub);
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .memo-card {
+
     background: var(--surface); border: 1px solid var(--border);
     border-radius: 16px; padding: 14px 16px;
     display: flex; flex-direction: column; gap: 8px;
@@ -670,7 +717,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
-  getDatabase, ref, push, onValue, remove, set, onDisconnect
+  getDatabase, ref, push, onValue, remove, set, update, onDisconnect
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 import {
   getMessaging, getToken, onMessage
@@ -705,7 +752,7 @@ const COLORS = [
   '#7B4F9E','#2A8C82','#C4732A','#5A5A5A'
 ];
 
-let myName = '', myColor = COLORS[0], roomCode = '';
+let myName = '', myColor = COLORS[0], roomCode = '', roomHash = '';
 let roomInfo = { roomName: '', photoData: '' };
 let itemCount = 0;
 let presenceRef = null;
@@ -714,6 +761,24 @@ let fcmToken = null;
 
 // 색상 선택기
 // 색상 선택기 초기화는 각 화면 진입 시 initColorGrid()로 처리
+
+// 32자리 랜덤 해시 생성 (URL 노출용 - 추측 불가)
+function generateHash() {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let h = '';
+  for (let i = 0; i < 32; i++) h += chars[Math.floor(Math.random() * chars.length)];
+  return h;
+}
+
+// URL 해시로 방 입장 (iOS manifest 분리 핵심)
+function setUrlHash(hash) {
+  history.replaceState(null, '', '#' + hash);
+}
+
+// URL 해시에서 roomHash 읽기
+function getUrlHash() {
+  return location.hash.replace('#', '').trim();
+}
 
 // Service Worker 등록 + FCM 초기화
 async function initPush() {
@@ -775,6 +840,8 @@ function initColorGrid(gridId) {
 
 // 화면 전환 함수
 window.showLanding = () => {
+  // 랜딩 화면 진입 시 URL hash 초기화
+  if (location.hash) history.replaceState(null, '', location.pathname);
   document.getElementById('landing-screen').style.display = 'flex';
   document.getElementById('create-screen').style.display = 'none';
   document.getElementById('setup-screen').style.display = 'none';
@@ -902,19 +969,26 @@ window.createRoom = async () => {
       photoData = await resizeImage(photoInput.files[0]);
     }
 
-    // 방 정보 Firebase에 저장
+    // roomHash 생성 (URL 노출용 32자리) → Firebase 매핑 저장
+    roomHash = generateHash();
+    await set(ref(db, `roomHashes/${roomHash}`), roomCode);
+
+    // 방 정보 Firebase에 저장 (hash도 함께)
     await set(ref(db, `rooms/${roomCode}/info`), {
       roomName,
       photoData,
+      roomHash,
       createdAt: Date.now()
     });
 
-    roomInfo = { roomName, photoData };
+    roomInfo = { roomName, photoData, roomHash };
+    setUrlHash(roomHash);
     enterBoard();
   } catch (e) {
     showToast('⚠️ 방 만들기에 실패했어요. 잠시 후 다시 시도해주세요');
     btn.disabled = false;
     btn.textContent = '방 만들기 →';
+    return;
   }
 };
 
@@ -947,13 +1021,25 @@ window.joinRoom = async () => {
     }
     myName = name;
     roomCode = code;
-    roomInfo = roomSnap.val().info || { roomName: code, photoData: '' };
+    const joinedInfo = roomSnap.val().info || { roomName: code, photoData: '' };
+    roomInfo = joinedInfo;
+
+    // roomHash 결정: info에 저장된 hash 사용, 없으면 새로 생성해서 Firebase에 등록
+    if (joinedInfo.roomHash) {
+      roomHash = joinedInfo.roomHash;
+    } else {
+      // 기존 방(hash 없음): 새 hash 생성 후 Firebase에 저장
+      roomHash = generateHash();
+      await set(ref(db, `roomHashes/${roomHash}`), code);
+      await set(ref(db, `rooms/${code}/info/roomHash`), roomHash);
+      roomInfo.roomHash = roomHash;
+    }
+    setUrlHash(roomHash);
 
     // 동명이인 경고 (같은 방에 동일 이름 이미 접속 중인 경우)
     const members = roomSnap.val().members || {};
     if (members[name] && members[name].online) {
       showToast(`⚠️ '${name}'은/는 이미 접속 중이에요. 다른 이름을 사용하거나 그대로 입장하세요`);
-      // 경고만 표시하고 계속 진행 (강제 차단 안 함)
     }
     enterBoard();
   } catch (e) {
@@ -991,7 +1077,8 @@ function enterBoard() {
   localStorage.setItem('fb_name', myName);
   localStorage.setItem('fb_color', myColor);
   localStorage.setItem('fb_room', roomCode);
-  localStorage.setItem('fb_roomInfo_' + roomCode, JSON.stringify(roomInfo));
+  localStorage.setItem('fb_hash', roomHash);
+  localStorage.setItem('fb_roomInfo_' + roomHash, JSON.stringify(roomInfo));
 
   document.getElementById('loading').style.display = 'none'; // 자동로그인 경로 대비
   document.getElementById('landing-screen').style.display = 'none';
@@ -1014,13 +1101,14 @@ function enterBoard() {
     const info = snap.val();
     if (info) {
       roomInfo = info;
-      localStorage.setItem('fb_roomInfo_' + roomCode, JSON.stringify(roomInfo));
+      localStorage.setItem('fb_roomInfo_' + roomHash, JSON.stringify(roomInfo));
     } else if (roomInfo.roomName) {
       // info 노드 없는 기존 방: localStorage에 저장된 이름으로 Firebase에 자동 기록
       // (이후 모든 기기에서 올바른 이름으로 표시됨)
       await set(ref(db, `rooms/${roomCode}/info`), {
         roomName: roomInfo.roomName,
-        photoData: roomInfo.photoData || ''
+        photoData: roomInfo.photoData || '',
+        roomHash: roomHash  // hash도 같이 저장
       });
       // onValue가 다시 트리거되므로 updateTopBar는 생략
       return;
@@ -1104,11 +1192,19 @@ function listenItems() {
     const data = snap.val() || {};
     const items = Object.entries(data)
       .map(([id, v]) => ({ id, ...v }))
-      .sort((a, b) => (b.ts || 0) - (a.ts || 0));
+      // order 필드 있으면 order 기준, 없으면 ts 역순 (기존 호환)
+      .sort((a, b) => {
+        const aHasOrder = a.order !== undefined;
+        const bHasOrder = b.order !== undefined;
+        if (aHasOrder && bHasOrder) return a.order - b.order;
+        if (aHasOrder) return -1;
+        if (bHasOrder) return 1;
+        return (b.ts || 0) - (a.ts || 0);
+      });
 
     if (itemCount > 0 && items.length > itemCount) {
-      const newest = items[0];
-      if (newest.author !== myName) showToast(`${newest.author}님이 새 메모를 추가했어요!`);
+      const newest = items.find(i => i.author !== myName && !itemsMap[i.id]);
+      if (newest) showToast(`${newest.author}님이 새 메모를 추가했어요!`);
     }
     itemCount = items.length;
     itemsMap = {};
@@ -1130,8 +1226,11 @@ window.sendMemo = async () => {
   if (sendBtn && sendBtn.disabled) return;
   if (sendBtn) sendBtn.disabled = true;
   try {
+    // 새 메모를 맨 위에 추가하기 위해 현재 최소 order 값 파악
+    const minOrder = Math.min(0, ...Object.values(itemsMap).map(i => i.order ?? 0));
     await push(ref(db, `rooms/${roomCode}/items`), {
-      author: myName, color: myColor, text, ts: Date.now()
+      author: myName, color: myColor, text, ts: Date.now(),
+      order: minOrder - 1000  // 기존 메모보다 낮은 order → 맨 위
     });
     ta.value = '';
     ta.style.height = 'auto';
@@ -1200,7 +1299,9 @@ window.saveEdit = async () => {
       ts: original.ts,           // 원본 작성시각 보존 (정렬 유지)
       edited: true,
       editedBy: myName,          // 누가 수정했는지 기록
-      editedAt: Date.now()
+      editedAt: Date.now(),
+      ...(original.order !== undefined ? { order: original.order } : {}),  // 드래그 순서 보존
+      ...(original.completed !== undefined ? { completed: original.completed } : {})  // 완료 상태 보존
     });
     closeEditModal();
     showToast('✏️ 수정됐어요!');
@@ -1222,6 +1323,63 @@ window.toggleComplete = async (id) => {
   }
 };
 
+// ── 드래그 앤 드롭 상태 ──
+let dragSrcId = null;
+let dragGhost = null;
+let dragOverId = null;
+let longPressTimer = null;
+const LONG_PRESS_MS = 500;
+
+function removeDragGhost() {
+  if (dragGhost) { dragGhost.remove(); dragGhost = null; }
+}
+
+function createGhost(card, clientX, clientY) {
+  removeDragGhost();
+  const ghost = document.createElement('div');
+  ghost.className = 'drag-ghost';
+  // 작성자 + 내용 요약만 표시
+  const authorEl = card.querySelector('.author-name');
+  const textEl   = card.querySelector('.card-text');
+  ghost.innerHTML = `<strong style="color:var(--accent)">${authorEl ? authorEl.textContent : ''}</strong><br>${textEl ? textEl.textContent.substring(0,60) : ''}`;
+  document.body.appendChild(ghost);
+  const rect = ghost.getBoundingClientRect();
+  ghost.style.left = (clientX - rect.width / 2) + 'px';
+  ghost.style.top  = (clientY - 30) + 'px';
+  dragGhost = ghost;
+}
+
+function moveGhost(clientX, clientY) {
+  if (!dragGhost) return;
+  const rect = dragGhost.getBoundingClientRect();
+  dragGhost.style.left = (clientX - rect.width / 2) + 'px';
+  dragGhost.style.top  = (clientY - 30) + 'px';
+}
+
+async function saveDragOrder(orderedIds) {
+  // 각 아이템에 order 값 일괄 업데이트
+  const updates = {};
+  orderedIds.forEach((id, idx) => {
+    updates[`rooms/${roomCode}/items/${id}/order`] = idx * 1000;
+  });
+  try {
+    // update는 상단 import에서 이미 가져옴
+    await update(ref(db, '/'), updates);
+  } catch(e) {
+    showToast('⚠️ 순서 저장에 실패했어요');
+  }
+}
+
+function getCardIdAtPoint(x, y) {
+  // 특정 좌표 아래에 있는 카드 id 반환
+  const els = document.elementsFromPoint(x, y);
+  for (const el of els) {
+    const card = el.closest('.memo-card[data-id]');
+    if (card && card.dataset.id !== dragSrcId) return card.dataset.id;
+  }
+  return null;
+}
+
 // 메모 렌더링
 function renderItems(items) {
   const body = document.getElementById('board-body');
@@ -1230,7 +1388,7 @@ function renderItems(items) {
     return;
   }
 
-  // 미완료 먼저, 완료는 하단으로
+  // 미완료 먼저, 완료는 하단으로 (order 정렬은 listenItems에서 이미 적용됨)
   const active = items.filter(i => !i.completed);
   const done   = items.filter(i =>  i.completed);
   const sorted = [...active, ...done];
@@ -1239,6 +1397,7 @@ function renderItems(items) {
   sorted.forEach(item => {
     const card = document.createElement('div');
     card.className = 'memo-card' + (item.completed ? ' completed' : '');
+    card.dataset.id = item.id;
     card.innerHTML = `
       <div class="card-header">
         <div class="card-author">
@@ -1255,7 +1414,85 @@ function renderItems(items) {
           ${item.author === myName ? `<button class="btn-delete" onclick="deleteItem('${item.id}')">×</button>` : ''}
         </div>
       </div>
-      <div class="card-text">${esc(item.text)}</div>`;
+      <div class="card-text">${esc(item.text)}</div>
+      <div class="drag-handle-hint">≡ 길게 눌러 순서 변경</div>`;
+
+    // ── 길게 누르기 → 드래그 시작 ──
+    card.addEventListener('touchstart', e => {
+      // 버튼 위에서는 드래그 안 함
+      if (e.target.closest('button')) return;
+      const touch = e.touches[0];
+      longPressTimer = setTimeout(() => {
+        // 햅틱 피드백 (지원 시)
+        if (navigator.vibrate) navigator.vibrate(40);
+        dragSrcId = item.id;
+        card.classList.add('drag-source');
+        createGhost(card, touch.clientX, touch.clientY);
+      }, LONG_PRESS_MS);
+    }, { passive: true });
+
+    card.addEventListener('touchmove', e => {
+      if (!dragSrcId) {
+        // 아직 드래그 안 시작됐으면 longPress 취소
+        clearTimeout(longPressTimer);
+        return;
+      }
+      e.preventDefault(); // 드래그 중 스크롤 방지
+      const touch = e.touches[0];
+      moveGhost(touch.clientX, touch.clientY);
+
+      // 현재 위치의 카드 하이라이트
+      const overId = getCardIdAtPoint(touch.clientX, touch.clientY);
+      if (overId !== dragOverId) {
+        document.querySelectorAll('.memo-card.drag-over').forEach(c => c.classList.remove('drag-over'));
+        dragOverId = overId;
+        if (overId) {
+          const overCard = document.querySelector(`.memo-card[data-id="${overId}"]`);
+          if (overCard) overCard.classList.add('drag-over');
+        }
+      }
+    }, { passive: false });
+
+    card.addEventListener('touchend', async e => {
+      clearTimeout(longPressTimer);
+      if (!dragSrcId) return;
+
+      const touch = e.changedTouches[0];
+      const overId = getCardIdAtPoint(touch.clientX, touch.clientY);
+
+      // 드래그 UI 정리
+      card.classList.remove('drag-source');
+      document.querySelectorAll('.memo-card.drag-over').forEach(c => c.classList.remove('drag-over'));
+      removeDragGhost();
+
+      if (overId && overId !== dragSrcId) {
+        // 현재 화면에 표시된 카드 순서 파악
+        const allCards = [...document.querySelectorAll('.memo-card[data-id]')];
+        const orderedIds = allCards.map(c => c.dataset.id);
+
+        // dragSrc를 overId 위치로 이동
+        const srcIdx  = orderedIds.indexOf(dragSrcId);
+        const destIdx = orderedIds.indexOf(overId);
+        if (srcIdx !== -1 && destIdx !== -1) {
+          orderedIds.splice(srcIdx, 1);
+          orderedIds.splice(destIdx, 0, dragSrcId);
+          await saveDragOrder(orderedIds);
+        }
+      }
+
+      dragSrcId = null;
+      dragOverId = null;
+    }, { passive: true });
+
+    card.addEventListener('touchcancel', () => {
+      clearTimeout(longPressTimer);
+      card.classList.remove('drag-source');
+      document.querySelectorAll('.memo-card.drag-over').forEach(c => c.classList.remove('drag-over'));
+      removeDragGhost();
+      dragSrcId = null;
+      dragOverId = null;
+    }, { passive: true });
+
     body.appendChild(card);
   });
 }
@@ -1553,7 +1790,11 @@ window.logout = () => {
   localStorage.removeItem('fb_name');
   localStorage.removeItem('fb_color');
   localStorage.removeItem('fb_room');
-  localStorage.removeItem('fb_roomInfo_' + roomCode);
+  localStorage.removeItem('fb_hash');
+  localStorage.removeItem('fb_roomInfo_' + roomHash);
+  localStorage.removeItem('fb_roomInfo_' + roomCode); // 구버전 키 정리
+  // URL hash 제거 (랜딩 화면으로 돌아갈 때 깔끔하게)
+  history.replaceState(null, '', location.pathname);
   document.getElementById('main-screen').style.display = 'none';
   showLanding();
   showToast('로그아웃 됐어요');
@@ -1713,7 +1954,7 @@ function updateManifest(name, iconDataUrl) {
     const manifest = {
       name: name,
       short_name: name,
-      start_url: './',
+      start_url: location.pathname + '#' + roomHash,
       display: 'standalone',
       background_color: '#F6F4EF',
       theme_color: '#3D6B4F',
@@ -1737,22 +1978,59 @@ function updateManifest(name, iconDataUrl) {
 }
 
 // 자동 로그인
-const sName  = localStorage.getItem('fb_name');
-const sColor = localStorage.getItem('fb_color');
-const sRoom  = localStorage.getItem('fb_room');
-if (sName && sColor && sRoom) {
-  myName = sName; myColor = sColor; roomCode = sRoom;
-  try {
-    const sRoomInfo = localStorage.getItem('fb_roomInfo_' + sRoom);
-    roomInfo = sRoomInfo ? JSON.parse(sRoomInfo) : { roomName: '', photoData: '' };
-  } catch (_) {
-    // localStorage 데이터 손상 시 폴백 (앱 crash 방지)
-    roomInfo = { roomName: '', photoData: '' };
+// URL #hash 있으면 → Firebase에서 roomCode 조회 → 입장
+// 없으면 → localStorage 기준으로 입장
+(async () => {
+  const urlHash = getUrlHash();
+  const sName  = localStorage.getItem('fb_name');
+  const sColor = localStorage.getItem('fb_color');
+
+  if (urlHash) {
+    // URL hash로 방 조회
+    try {
+      const hashSnap = await new Promise(res =>
+        onValue(ref(db, `roomHashes/${urlHash}`), res, { onlyOnce: true })
+      );
+      const code = hashSnap.val();
+      if (code && sName && sColor) {
+        // hash + 사용자 정보 모두 있음 → 자동 로그인
+        myName = sName;
+        myColor = sColor;
+        roomCode = code;
+        roomHash = urlHash;
+        try {
+          const sRoomInfo = localStorage.getItem('fb_roomInfo_' + urlHash);
+          roomInfo = sRoomInfo ? JSON.parse(sRoomInfo) : { roomName: '', photoData: '' };
+        } catch (_) {
+          roomInfo = { roomName: '', photoData: '' };
+        }
+        enterBoard();
+        return;
+      }
+    } catch (_) {}
+    // hash는 있지만 사용자 정보 없음 → 참여 화면으로 (hash 유지)
+    showLanding();
+    return;
   }
-  enterBoard();
-} else {
-  showLanding();
-}
+
+  // URL hash 없음 → localStorage 기준 자동 로그인
+  const sRoom = localStorage.getItem('fb_room');
+  const sHash = localStorage.getItem('fb_hash');
+  if (sName && sColor && sRoom) {
+    myName = sName; myColor = sColor; roomCode = sRoom; roomHash = sHash || '';
+    if (roomHash) setUrlHash(roomHash); // URL에 hash 복원
+    try {
+      const key = sHash || sRoom;
+      const sRoomInfo = localStorage.getItem('fb_roomInfo_' + key);
+      roomInfo = sRoomInfo ? JSON.parse(sRoomInfo) : { roomName: '', photoData: '' };
+    } catch (_) {
+      roomInfo = { roomName: '', photoData: '' };
+    }
+    enterBoard();
+  } else {
+    showLanding();
+  }
+})();
 </script>
 </body>
 </html>
