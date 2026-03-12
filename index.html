@@ -7,10 +7,10 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="이안이네 가족">
+<meta name="apple-mobile-web-app-title" content="">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="shrfamily.jpg">
-<title>이안이네 가족</title>
+<title>가족 공유판</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1002,6 +1002,14 @@ function enterBoard() {
   document.getElementById('me-name').textContent = myName;
   document.getElementById('room-chip').textContent = '📋 ' + roomCode;
 
+  // 방 전환 시 이전 방 정보 초기화 (이름/사진 잔류 방지)
+  const titleEl0 = document.querySelector('.top-bar .board-title');
+  if (titleEl0) titleEl0.textContent = '';
+  document.title = '가족 공유판';
+  const appMeta = document.querySelector("meta[name='apple-mobile-web-app-title']");
+  if (appMeta) appMeta.content = '';
+  updateManifest('가족 공유판', '');
+
   // 방 정보 실시간 감지 (첫 로드 시 즉시 업데이트 포함)
   unsubscribers.push(onValue(ref(db, `rooms/${roomCode}/info`), async snap => {
     const info = snap.val();
@@ -1615,14 +1623,12 @@ function updateTopBar() {
   // 탭 제목 + 홈 바로가기 이름: 현재 표시 중인 board-title 텍스트 사용
   // (roomCode가 아니라 화면에 보이는 실제 이름으로)
   // shownName 결정 순서:
-  // 1) roomInfo에 실제 이름 있으면 사용
-  // 2) titleEl에 텍스트 있으면 사용 (HTML 하드코딩 또는 이전 업데이트)
-  // 3) meta apple-mobile-web-app-title 폴백
-  // 4) 최후 폴백 '가족 공유판'
-  const metaTitle = document.querySelector("meta[name='apple-mobile-web-app-title']")?.content || '';
+  // 1) roomInfo에 실제 이름 있으면 사용 (Firebase info 로드 완료)
+  // 2) titleEl에 텍스트 있으면 사용 (이전 방 업데이트 값)
+  // 3) 최후 폴백 '가족 공유판' (meta는 사용하지 않음 - 오염 방지)
   const shownName = hasRealName
     ? roomInfo.roomName
-    : (titleEl?.textContent?.trim() || metaTitle || '가족 공유판');
+    : (titleEl?.textContent?.trim() || '가족 공유판');
 
   // 시간표 제목은 항상 고정
   const schedTitle = document.querySelector('.schedule-title');
