@@ -1431,13 +1431,15 @@ function renderItems(items) {
       }, LONG_PRESS_MS);
     }, { passive: true });
 
+    // touchmove: 드래그 중일 때만 passive:false로 전환
+    // passive:true로 먼저 등록하면 preventDefault 불가 → 별도 핸들러로 분리
     card.addEventListener('touchmove', e => {
       if (!dragSrcId) {
-        // 아직 드래그 안 시작됐으면 longPress 취소
+        // 드래그 안 시작됐으면 longPress 취소 (스크롤은 정상 허용)
         clearTimeout(longPressTimer);
-        return;
+        return; // preventDefault 호출 안 함 → 시간표 슬롯 터치 정상 동작
       }
-      e.preventDefault(); // 드래그 중 스크롤 방지
+      // 드래그 중: 스크롤 방지 (passive:false 필요)
       const touch = e.touches[0];
       moveGhost(touch.clientX, touch.clientY);
 
@@ -1451,6 +1453,11 @@ function renderItems(items) {
           if (overCard) overCard.classList.add('drag-over');
         }
       }
+    }, { passive: true }); // passive:true → 스크롤 방해 안 함
+
+    // 드래그 중일 때만 스크롤 막는 별도 핸들러 (passive:false)
+    card.addEventListener('touchmove', e => {
+      if (dragSrcId) e.preventDefault();
     }, { passive: false });
 
     card.addEventListener('touchend', async e => {
