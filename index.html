@@ -1697,9 +1697,19 @@ function setFavicon(photoDataOrUrl) {
 
 function updateManifest(name, iconDataUrl) {
   try {
-    // manifest 아이콘도 Blob URL 사용 (base64는 일부 브라우저에서 인식 안 됨)
-    const iconSrc = _faviconBlobUrl || iconDataUrl || 'shrfamily.jpg';
-    const iconEntry = [{ src: iconSrc, sizes: '192x192', type: 'image/jpeg' }];
+    // iOS Safari는 manifest 내 Blob URL 아이콘을 읽지 못함
+    // → base64 data URL을 manifest JSON에 직접 embed
+    // → 방 사진 없으면 shrfamily.jpg URL 사용
+    let iconEntry;
+    if (iconDataUrl && iconDataUrl.startsWith('data:')) {
+      // base64 그대로 embed (iOS Safari가 manifest JSON 내 base64는 지원함)
+      const mime = iconDataUrl.split(';')[0].split(':')[1] || 'image/jpeg';
+      iconEntry = [{ src: iconDataUrl, sizes: '192x192', type: mime }];
+    } else {
+      // 방 사진 없는 경우 → 절대 URL 사용
+      const base = location.origin + location.pathname.replace(/\/[^/]*$/, '/');
+      iconEntry = [{ src: base + 'shrfamily.jpg', sizes: '192x192', type: 'image/jpeg' }];
+    }
     const manifest = {
       name: name,
       short_name: name,
