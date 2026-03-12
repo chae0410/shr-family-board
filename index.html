@@ -1417,33 +1417,37 @@ function renderItems(items) {
       <div class="card-text">${esc(item.text)}</div>
       <div class="drag-handle-hint">≡ 길게 눌러 순서 변경</div>`;
 
-    // ── 길게 누르기 → 드래그 시작 ──
-    card.addEventListener('touchstart', e => {
-      // 버튼 위에서는 드래그 안 함
-      if (e.target.closest('button')) return;
+    body.appendChild(card);
+  });
+
+  // ── 드래그 이벤트를 board-body 컨테이너에 위임 (카드 개별 등록 금지) ──
+  // 이미 등록됐으면 재등록 방지
+  if (!body._dragInited) {
+    body._dragInited = true;
+
+    // touchstart: board-body 내 카드에서만 longPress 시작
+    body.addEventListener('touchstart', e => {
+      const card = e.target.closest('.memo-card[data-id]');
+      if (!card || e.target.closest('button')) return;
       const touch = e.touches[0];
       longPressTimer = setTimeout(() => {
-        // 햅틱 피드백 (지원 시)
         if (navigator.vibrate) navigator.vibrate(40);
-        dragSrcId = item.id;
+        dragSrcId = card.dataset.id;
         card.classList.add('drag-source');
         createGhost(card, touch.clientX, touch.clientY);
       }, LONG_PRESS_MS);
     }, { passive: true });
 
-    // touchmove: 드래그 중일 때만 passive:false로 전환
-    // passive:true로 먼저 등록하면 preventDefault 불가 → 별도 핸들러로 분리
-    card.addEventListener('touchmove', e => {
+    // touchmove: passive:false지만 board-body 안에만 등록
+    // → 시간표(schedule-section)는 board-body 밖이므로 영향 없음
+    body.addEventListener('touchmove', e => {
       if (!dragSrcId) {
-        // 드래그 안 시작됐으면 longPress 취소 (스크롤은 정상 허용)
         clearTimeout(longPressTimer);
-        return; // preventDefault 호출 안 함 → 시간표 슬롯 터치 정상 동작
+        return;
       }
-      // 드래그 중: 스크롤 방지 (passive:false 필요)
+      e.preventDefault(); // 드래그 중 스크롤 방지
       const touch = e.touches[0];
       moveGhost(touch.clientX, touch.clientY);
-
-      // 현재 위치의 카드 하이라이트
       const overId = getCardIdAtPoint(touch.clientX, touch.clientY);
       if (overId !== dragOverId) {
         document.querySelectorAll('.memo-card.drag-over').forEach(c => c.classList.remove('drag-over'));
@@ -1453,31 +1457,20 @@ function renderItems(items) {
           if (overCard) overCard.classList.add('drag-over');
         }
       }
-    }, { passive: true }); // passive:true → 스크롤 방해 안 함
-
-    // 드래그 중일 때만 스크롤 막는 별도 핸들러 (passive:false)
-    card.addEventListener('touchmove', e => {
-      if (dragSrcId) e.preventDefault();
     }, { passive: false });
 
-    card.addEventListener('touchend', async e => {
+    // touchend: 드래그 완료 처리
+    body.addEventListener('touchend', async e => {
       clearTimeout(longPressTimer);
       if (!dragSrcId) return;
-
       const touch = e.changedTouches[0];
       const overId = getCardIdAtPoint(touch.clientX, touch.clientY);
-
-      // 드래그 UI 정리
-      card.classList.remove('drag-source');
-      document.querySelectorAll('.memo-card.drag-over').forEach(c => c.classList.remove('drag-over'));
+      document.querySelectorAll('.memo-card.drag-source, .memo-card.drag-over')
+        .forEach(c => c.classList.remove('drag-source', 'drag-over'));
       removeDragGhost();
-
       if (overId && overId !== dragSrcId) {
-        // 현재 화면에 표시된 카드 순서 파악
         const allCards = [...document.querySelectorAll('.memo-card[data-id]')];
         const orderedIds = allCards.map(c => c.dataset.id);
-
-        // dragSrc를 overId 위치로 이동
         const srcIdx  = orderedIds.indexOf(dragSrcId);
         const destIdx = orderedIds.indexOf(overId);
         if (srcIdx !== -1 && destIdx !== -1) {
@@ -1486,22 +1479,20 @@ function renderItems(items) {
           await saveDragOrder(orderedIds);
         }
       }
-
       dragSrcId = null;
       dragOverId = null;
     }, { passive: true });
 
-    card.addEventListener('touchcancel', () => {
+    // touchcancel
+    body.addEventListener('touchcancel', () => {
       clearTimeout(longPressTimer);
-      card.classList.remove('drag-source');
-      document.querySelectorAll('.memo-card.drag-over').forEach(c => c.classList.remove('drag-over'));
+      document.querySelectorAll('.memo-card.drag-source, .memo-card.drag-over')
+        .forEach(c => c.classList.remove('drag-source', 'drag-over'));
       removeDragGhost();
       dragSrcId = null;
       dragOverId = null;
     }, { passive: true });
-
-    body.appendChild(card);
-  });
+  }
 }
 
 // ===================== 학원 시간표 =====================
