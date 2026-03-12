@@ -991,7 +991,7 @@ function enterBoard() {
   localStorage.setItem('fb_name', myName);
   localStorage.setItem('fb_color', myColor);
   localStorage.setItem('fb_room', roomCode);
-  localStorage.setItem('fb_roomInfo', JSON.stringify(roomInfo));
+  localStorage.setItem('fb_roomInfo_' + roomCode, JSON.stringify(roomInfo));
 
   document.getElementById('loading').style.display = 'none'; // 자동로그인 경로 대비
   document.getElementById('landing-screen').style.display = 'none';
@@ -1010,7 +1010,7 @@ function enterBoard() {
     const info = snap.val();
     if (info) {
       roomInfo = info;
-      localStorage.setItem('fb_roomInfo', JSON.stringify(roomInfo));
+      localStorage.setItem('fb_roomInfo_' + roomCode, JSON.stringify(roomInfo));
       updateTopBar();
     } else if (!roomInfo.roomName) {
       roomInfo = { roomName: roomCode, photoData: '' };
@@ -1543,7 +1543,7 @@ window.logout = () => {
   localStorage.removeItem('fb_name');
   localStorage.removeItem('fb_color');
   localStorage.removeItem('fb_room');
-  localStorage.removeItem('fb_roomInfo');
+  localStorage.removeItem('fb_roomInfo_' + roomCode);
   document.getElementById('main-screen').style.display = 'none';
   showLanding();
   showToast('로그아웃 됐어요');
@@ -1604,20 +1604,19 @@ function updateTopBar() {
   const titleEl = document.querySelector('.top-bar .board-title');
   if (imgEl && photo) imgEl.src = photo;
   if (titleEl && hasRealName) titleEl.textContent = roomInfo.roomName;
+  // 시간표 제목은 항상 고정 (방 이름 따라가지 않음)
   const schedTitle = document.querySelector('.schedule-title');
-  if (schedTitle && hasRealName) {
-    schedTitle.textContent = `📚 ${roomInfo.roomName} 학원 시간표`;
-  }
+  if (schedTitle) schedTitle.textContent = '📚 주간 학원 일정표';
 }
 
 // 자동 로그인
 const sName  = localStorage.getItem('fb_name');
 const sColor = localStorage.getItem('fb_color');
 const sRoom  = localStorage.getItem('fb_room');
-const sRoomInfo = localStorage.getItem('fb_roomInfo');
 if (sName && sColor && sRoom) {
   myName = sName; myColor = sColor; roomCode = sRoom;
   try {
+    const sRoomInfo = localStorage.getItem('fb_roomInfo_' + sRoom);
     roomInfo = sRoomInfo ? JSON.parse(sRoomInfo) : { roomName: sRoom, photoData: '' };
   } catch (_) {
     // localStorage 데이터 손상 시 폴백 (앱 crash 방지)
