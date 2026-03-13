@@ -420,45 +420,49 @@
   }
   .btn-add-schedule:active { opacity: 0.8; }
 
-  .schedule-table {
-    width: 100%; border-collapse: collapse; table-layout: fixed;
-    font-size: 10px;
+  /* ── 시간 비례 시간표 ── */
+  .sched-grid {
+    display: flex; width: 100%; gap: 1px;
   }
-  .schedule-table th {
-    text-align: center; padding: 4px 1px;
-    font-size: 10px; font-weight: 700;
-    color: var(--text-sub); border-bottom: 1px solid var(--border);
+  .sched-day-col {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
   }
-  .schedule-table th.sun { color: #C0553C; }
-  .schedule-table th.sat { color: #4A6FA5; }
-  .schedule-table td {
-    vertical-align: top; padding: 1px 1px 0px 1px;
+  .sched-day-label {
+    font-size: 10px; font-weight: 700; color: var(--text-sub);
+    text-align: center; padding: 3px 0 4px;
+    border-bottom: 1px solid var(--border); width: 100%;
+  }
+  .sched-day-label.sun { color: #C0553C; }
+  .sched-day-label.sat { color: #4A6FA5; }
+  .sched-day-slots {
+    position: relative; width: 100%;
+    /* 높이는 JS에서 동적으로 설정 */
   }
   .schedule-slot {
-    border-radius: 5px; padding: 2px 2px; margin-bottom: 1px;
+    position: absolute; left: 0; right: 0;
+    border-radius: 5px; padding: 2px 2px;
     cursor: pointer;
     user-select: none; -webkit-user-select: none;
     touch-action: none; -webkit-touch-callout: none;
     transition: opacity 0.15s;
     text-align: center;
     display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    overflow: hidden;
-    min-height: 0;
+    align-items: center; justify-content: flex-start;
+    overflow: hidden; box-sizing: border-box;
   }
   .schedule-slot:active { opacity: 0.7; }
   .schedule-slot .slot-time {
-    font-size: 8px; opacity: 0.85; display: block;
+    font-size: 7px; opacity: 0.85; display: block;
     white-space: nowrap; overflow: hidden;
     text-overflow: ellipsis; width: 100%;
-    text-align: center; line-height: 1.4;
+    text-align: center; line-height: 1.4; flex-shrink: 0;
   }
   .schedule-slot .slot-name {
     font-weight: 700; display: block;
     word-break: keep-all; overflow: hidden;
     width: 100%; text-align: center;
-    font-size: clamp(7px, 1.8vw, 11px);
-    line-height: 1.3;
+    font-size: clamp(7px, 1.8vw, 10px);
+    line-height: 1.3; flex-shrink: 0;
   }
 
   /* 학원 일정 모달 */
@@ -688,16 +692,7 @@
       <span class="schedule-title">📚 이안 학원 시간표</span>
       <button class="btn-add-schedule" onclick="openSchedModal()">+ 일정 추가</button>
     </div>
-    <table class="schedule-table">
-      <thead>
-        <tr>
-          <th class="sun">일</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th class="sat">토</th>
-        </tr>
-      </thead>
-      <tbody id="schedule-tbody">
-        <tr><td colspan="7" style="text-align:center;color:var(--text-sub);font-size:11px;padding:8px;">일정을 추가해주세요</td></tr>
-      </tbody>
-    </table>
+    <div class="sched-grid" id="sched-grid"></div>
   </div>
 
   <div class="board-body" id="board-body">
@@ -1528,45 +1523,110 @@ function listenSchedules() {
   }));
 }
 
+function toMin(h, m) { return h * 60 + m; }
+
 function renderSchedule() {
-  const tbody = document.getElementById('schedule-tbody');
+  const grid = document.getElementById('sched-grid');
+  if (!grid) return;
+
+  // 일정 없으면 빈 메시지
   if (schedules.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-sub);font-size:11px;padding:8px;">일정을 추가해주세요</td></tr>`;
+    grid.innerHTML = `<div style="width:100%;text-align:center;color:var(--text-sub);font-size:11px;padding:10px 0;">일정을 추가해주세요</div>`;
+    // 이벤트 등록 없이 종료
+    attachSlotEvents(grid);
     return;
   }
-  // 요일별 그룹
+
+  // 요일별 그룹 + 시작시간 순 정렬
   const byDay = Array.from({length:7}, () => []);
   schedules.forEach(s => { if (s.day >= 0 && s.day <= 6) byDay[s.day].push(s); });
-  byDay.forEach(arr => arr.sort((a,b) => a.startH*60+a.startM - (b.startH*60+b.startM)));
+  byDay.forEach(arr => arr.sort((a,b) => toMin(a.startH,a.startM) - toMin(b.startH,b.startM)));
 
-  const maxRows = Math.max(...byDay.map(a => a.length), 1);
-  let html = '';
-  for (let r = 0; r < maxRows; r++) {
-    html += '<tr>';
-    for (let d = 0; d < 7; d++) {
-      const s = byDay[d][r];
-      if (s) {
-        const bg = getSchedColor(s.name);
-        const textColor = '#2A2824';
-        html += `<td>
-          <div class="schedule-slot" style="background:${bg};color:${textColor};"
-            data-id="${s.id}"
-            oncontextmenu="return false;"
-          >
-            <span class="slot-time">${pad(s.startH)}:${pad(s.startM)}~${pad(s.endH)}:${pad(s.endM)}</span>
-            <span class="slot-name">${esc2(s.name)}</span>
-          </div>
-        </td>`;
-      } else {
-        html += '<td></td>';
-      }
+  // 전체 시간 범위 계산 (표시할 최소~최대)
+  let globalMin = Infinity, globalMax = -Infinity;
+  schedules.forEach(s => {
+    globalMin = Math.min(globalMin, toMin(s.startH, s.startM));
+    globalMax = Math.max(globalMax, toMin(s.endH,   s.endM));
+  });
+  // 최소 1시간 범위, 30분 여백
+  globalMin = Math.max(0,   globalMin - 30);
+  globalMax = Math.min(1440, globalMax + 30);
+  const totalMin = globalMax - globalMin;
+
+  // 1분당 픽셀 (컨테이너 높이 기준)
+  // 최소 높이 80px, 1분 = 0.8px 기준
+  const PX_PER_MIN = 0.9;
+  const containerH = Math.max(80, totalMin * PX_PER_MIN);
+
+  const DAY_LABELS = ['일','월','화','수','목','금','토'];
+  const DAY_CLASSES = ['sun','','','','','','sat'];
+
+  grid.innerHTML = '';
+  for (let d = 0; d < 7; d++) {
+    const col = document.createElement('div');
+    col.className = 'sched-day-col';
+
+    // 요일 라벨
+    const label = document.createElement('div');
+    label.className = 'sched-day-label' + (DAY_CLASSES[d] ? ' ' + DAY_CLASSES[d] : '');
+    label.textContent = DAY_LABELS[d];
+    col.appendChild(label);
+
+    // 슬롯 컨테이너 (절대 포지셔닝)
+    const slotsDiv = document.createElement('div');
+    slotsDiv.className = 'sched-day-slots';
+    slotsDiv.style.height = containerH + 'px';
+
+    byDay[d].forEach((s, idx) => {
+      const startMin = toMin(s.startH, s.startM);
+      const endMin   = toMin(s.endH,   s.endM);
+      const duration = Math.max(endMin - startMin, 20); // 최소 20분 높이 보장
+
+      const topPx    = (startMin - globalMin) * PX_PER_MIN;
+      const heightPx = Math.max(duration * PX_PER_MIN, 22); // 최소 22px
+
+      // 같은 요일 내 겹치는 일정 → 좌우로 분할
+      // 현재 슬롯과 시간이 겹치는 이전 슬롯 개수로 컬럼 계산
+      const overlapping = byDay[d].filter((other, oi) => {
+        if (oi >= idx) return false;
+        return toMin(other.startH, other.startM) < endMin &&
+               toMin(other.endH,   other.endM)   > startMin;
+      });
+      const colCount  = overlapping.length + 1;
+      const colIndex  = overlapping.length;
+      const colWidth  = 100 / colCount;
+
+      const bg = getSchedColor(s.name);
+      const slot = document.createElement('div');
+      slot.className = 'schedule-slot';
+      slot.dataset.id = s.id;
+      slot.style.cssText = `
+        background:${bg}; color:#2A2824;
+        top:${topPx}px; height:${heightPx}px;
+        left:${colIndex * colWidth}%; width:${colWidth}%;
+        right:auto;
+      `;
+      slot.innerHTML = `
+        <span class="slot-time">${pad(s.startH)}:${pad(s.startM)}~${pad(s.endH)}:${pad(s.endM)}</span>
+        <span class="slot-name">${esc2(s.name)}</span>`;
+
+      slotsDiv.appendChild(slot);
+    });
+
+    // 빈 요일도 컨테이너는 유지 (높이 맞추기)
+    if (byDay[d].length === 0) {
+      slotsDiv.style.minHeight = '30px';
     }
-    html += '</tr>';
-  }
-  tbody.innerHTML = html;
 
-  // 터치/클릭 이벤트 (짧게 탭 = 툴팁, 길게 누르기 = 수정/삭제)
-  tbody.querySelectorAll('.schedule-slot').forEach(el => {
+    col.appendChild(slotsDiv);
+    grid.appendChild(col);
+  }
+
+  attachSlotEvents(grid);
+}
+
+function attachSlotEvents(container) {
+  container.querySelectorAll('.schedule-slot').forEach(el => {
     let timer = null;
     let longFired = false;
 
