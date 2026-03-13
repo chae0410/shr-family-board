@@ -1293,16 +1293,12 @@ window.saveEdit = async () => {
 
   try {
     const itemRef = ref(db, `rooms/${roomCode}/items/${editingId}`);
-    await set(itemRef, {
-      author: original.author,   // 원본 작성자 보존 (수정해도 작성자 안 바뀜)
-      color: original.color,     // 원본 색상 보존
+    // update()로 변경 필드만 덮어씀 → onValueCreated 트리거 방지
+    await update(itemRef, {
       text: newText,
-      ts: original.ts,           // 원본 작성시각 보존 (정렬 유지)
       edited: true,
-      editedBy: myName,          // 누가 수정했는지 기록
+      editedBy: myName,
       editedAt: Date.now(),
-      ...(original.order !== undefined ? { order: original.order } : {}),  // 드래그 순서 보존
-      ...(original.completed !== undefined ? { completed: original.completed } : {})  // 완료 상태 보존
     });
     closeEditModal();
     showToast('✏️ 수정됐어요!');
@@ -1318,7 +1314,8 @@ window.toggleComplete = async (id) => {
   const { id: _localId, ...itemData } = item; // 로컬 id 필드 제외
   const itemRef = ref(db, `rooms/${roomCode}/items/${id}`);
   try {
-    await set(itemRef, { ...itemData, completed: !item.completed });
+    // update()로 completed 필드만 변경 → onValueCreated 트리거 방지
+    await update(itemRef, { completed: !item.completed });
   } catch (e) {
     showToast('⚠️ 완료 처리에 실패했어요. 다시 시도해주세요');
   }
