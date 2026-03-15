@@ -364,11 +364,11 @@ body {
 
 <!-- 네비 탭 -->
 <div class="nav-tabs">
-  <div class="nav-tab active" onclick="scrollTo('#start')">시작하기</div>
-  <div class="nav-tab" onclick="scrollTo('#memo')">메모 공유</div>
-  <div class="nav-tab" onclick="scrollTo('#schedule')">학원 시간표</div>
-  <div class="nav-tab" onclick="scrollTo('#notification')">알림</div>
-  <div class="nav-tab" onclick="scrollTo('#tips')">팁 &amp; FAQ</div>
+  <div class="nav-tab active" onclick="goSection('#start', this)">시작하기</div>
+  <div class="nav-tab" onclick="goSection('#memo', this)">메모 공유</div>
+  <div class="nav-tab" onclick="goSection('#schedule', this)">학원 시간표</div>
+  <div class="nav-tab" onclick="goSection('#notification', this)">알림</div>
+  <div class="nav-tab" onclick="goSection('#tips', this)">팁 &amp; FAQ</div>
 </div>
 
 <!-- 시작하기 -->
@@ -633,10 +633,11 @@ function openApp(e) {
   window.open('https://chae0410.github.io/shr-family-board/?guide=1', '_blank');
   return false;
 }
-function scrollTo(id) {
-  document.querySelector(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+function goSection(id, tab) {
+  const el = document.querySelector(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  event.target.classList.add('active');
+  if (tab) tab.classList.add('active');
 }
 function toggleFaq(el) {
   el.classList.toggle('open');
