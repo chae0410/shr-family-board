@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3D6B4F;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2A8C82;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="house" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E8F4F0;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- 배경 원형 -->
+  <rect width="512" height="512" rx="100" fill="url(#bg)"/>
+
+  <!-- 집 지붕 -->
+  <polygon points="256,90 110,230 402,230" fill="#FFFFFF" opacity="0.95"/>
+  <!-- 굴뚝 -->
+  <rect x="310" y="150" width="36" height="80" rx="6" fill="#FFFFFF" opacity="0.8"/>
+
+  <!-- 집 몸체 -->
+  <rect x="130" y="225" width="252" height="185" rx="10" fill="url(#house)"/>
+
+  <!-- 문 -->
+  <rect x="220" y="310" width="72" height="100" rx="10" fill="#3D6B4F" opacity="0.85"/>
+  <!-- 문 손잡이 -->
+  <circle cx="282" cy="365" r="6" fill="#FFFFFF" opacity="0.9"/>
+
+  <!-- 왼쪽 창문 -->
+  <rect x="148" y="258" width="60" height="52" rx="8" fill="#3D6B4F" opacity="0.5"/>
+  <line x1="178" y1="258" x2="178" y2="310" stroke="white" stroke-width="3" opacity="0.6"/>
+  <line x1="148" y1="284" x2="208" y2="284" stroke="white" stroke-width="3" opacity="0.6"/>
+
+  <!-- 오른쪽 창문 -->
+  <rect x="304" y="258" width="60" height="52" rx="8" fill="#3D6B4F" opacity="0.5"/>
+  <line x1="334" y1="258" x2="334" y2="310" stroke="white" stroke-width="3" opacity="0.6"/>
+  <line x1="304" y1="284" x2="364" y2="284" stroke="white" stroke-width="3" opacity="0.6"/>
+
+  <!-- 하트 (문 위) -->
+  <path d="M256,295 C256,295 240,278 240,268 C240,260 248,254 256,262 C264,254 272,260 272,268 C272,278 256,295 256,295 Z" fill="#E05C5C" opacity="0.9"/>
+
+  <!-- 하단 잔디 라인 -->
+  <rect x="80" y="408" width="352" height="12" rx="6" fill="#FFFFFF" opacity="0.25"/>
+</svg>

@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3D6B4F"/>
+      <stop offset="60%" style="stop-color:#2A7A6A"/>
+      <stop offset="100%" style="stop-color:#2A8C82"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:0.15"/>
+      <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:0.05"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 배경 -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- 배경 원형 장식들 -->
+  <circle cx="1050" cy="80" r="180" fill="#FFFFFF" opacity="0.04"/>
+  <circle cx="150" cy="550" r="200" fill="#FFFFFF" opacity="0.04"/>
+  <circle cx="980" cy="500" r="120" fill="#FFFFFF" opacity="0.06"/>
+
+  <!-- 왼쪽: 아이콘 영역 -->
+  <!-- 아이콘 배경 카드 -->
+  <rect x="80" y="140" width="320" height="320" rx="48" fill="url(#card)" stroke="#FFFFFF" stroke-width="1.5" stroke-opacity="0.2"/>
+
+  <!-- 집 지붕 -->
+  <polygon points="240,195 130,295 350,295" fill="#FFFFFF" opacity="0.95"/>
+  <!-- 굴뚝 -->
+  <rect x="295" y="228" width="28" height="67" rx="5" fill="#FFFFFF" opacity="0.8"/>
+  <!-- 집 몸체 -->
+  <rect x="145" y="291" width="190" height="140" rx="8" fill="#FFFFFF" opacity="0.15"/>
+  <rect x="145" y="291" width="190" height="140" rx="8" fill="#FFFFFF" opacity="0.08"/>
+  <!-- 문 -->
+  <rect x="215" y="355" width="54" height="76" rx="8" fill="#FFFFFF" opacity="0.6"/>
+  <circle cx="260" cy="395" r="5" fill="#3D6B4F" opacity="0.8"/>
+  <!-- 창문 왼쪽 -->
+  <rect x="158" y="308" width="44" height="38" rx="6" fill="#3D6B4F" opacity="0.4"/>
+  <line x1="180" y1="308" x2="180" y2="346" stroke="white" stroke-width="2" opacity="0.5"/>
+  <line x1="158" y1="327" x2="202" y2="327" stroke="white" stroke-width="2" opacity="0.5"/>
+  <!-- 창문 오른쪽 -->
+  <rect x="282" y="308" width="44" height="38" rx="6" fill="#3D6B4F" opacity="0.4"/>
+  <line x1="304" y1="308" x2="304" y2="346" stroke="white" stroke-width="2" opacity="0.5"/>
+  <line x1="282" y1="327" x2="326" y2="327" stroke="white" stroke-width="2" opacity="0.5"/>
+  <!-- 하트 -->
+  <path d="M242,348 C242,348 230,336 230,328 C230,322 237,317 242,323 C247,317 254,322 254,328 C254,336 242,348 242,348 Z" fill="#FF6B6B" opacity="0.95"/>
+
+  <!-- 오른쪽: 텍스트 영역 -->
+  <!-- 태그라인 -->
+  <rect x="460" y="178" width="220" height="36" rx="18" fill="#FFFFFF" opacity="0.15"/>
+  <text x="570" y="202" font-family="Arial, sans-serif" font-size="15" font-weight="600" fill="#FFFFFF" opacity="0.9" text-anchor="middle" letter-spacing="3">FAMILY BOARD</text>
+
+  <!-- 메인 타이틀 -->
+  <text x="460" y="290" font-family="Arial, sans-serif" font-size="74" font-weight="800" fill="#FFFFFF" opacity="0.98" letter-spacing="-1">가족</text>
+  <text x="460" y="375" font-family="Arial, sans-serif" font-size="74" font-weight="800" fill="#FFFFFF" opacity="0.98" letter-spacing="-1">공유판</text>
+
+  <!-- 서브 텍스트 -->
+  <text x="460" y="435" font-family="Arial, sans-serif" font-size="24" fill="#FFFFFF" opacity="0.75">우리 가족만의 실시간 공유 공간</text>
+
+  <!-- 구분선 -->
+  <rect x="460" y="460" width="60" height="4" rx="2" fill="#FFFFFF" opacity="0.4"/>
+
+  <!-- 하단 URL -->
+  <text x="460" y="510" font-family="Arial, sans-serif" font-size="18" fill="#FFFFFF" opacity="0.55" letter-spacing="1">chae0410.github.io/shr-family-board</text>
+
+  <!-- 하단 장식 도트들 -->
+  <circle cx="460" cy="552" r="5" fill="#FFFFFF" opacity="0.4"/>
+  <circle cx="480" cy="552" r="5" fill="#FFFFFF" opacity="0.25"/>
+  <circle cx="500" cy="552" r="5" fill="#FFFFFF" opacity="0.15"/>
+</svg>
