@@ -628,7 +628,7 @@
     <div class="setup-card">
       <div>
         <span class="field-label">방 이름</span>
-        <input class="text-input" id="create-room-name" placeholder="예: 이안이네 가족, 김씨 가족..." maxlength="15">
+        <input class="text-input" id="create-room-name" placeholder="예: 김씨 가족, 우리 가족..." maxlength="15">
       </div>
       <div>
         <span class="field-label">방 사진</span>
@@ -1937,7 +1937,7 @@ function showToast(msg) {
 
 // 상단 바 방 사진/이름 업데이트
 // roomInfo.roomName이 roomCode 폴백이 아닌 실제 이름일 때만 덮어씀
-// → 이안이네 가족처럼 info 없는 기존 방은 HTML 하드코딩 타이틀 유지
+// → info 없는 기존 방은 HTML 하드코딩 타이틀 유지
 function updateTopBar() {
   const hasRealName = roomInfo.roomName && roomInfo.roomName !== roomCode;
   const photo = roomInfo.photoData || '';
@@ -2070,7 +2070,13 @@ function updateManifest(name, iconDataUrl) {
 // 자동 로그인
 // URL #hash 있으면 → Firebase에서 roomCode 조회 → 입장
 // 없으면 → localStorage 기준으로 입장
+// ?guide=1 파라미터 있으면 → 자동 로그인 건너뜀 (가이드에서 링크로 진입 시)
 (async () => {
+  // 가이드 등 외부에서 ?guide=1로 진입하면 자동로그인 안 함
+  if (location.search.includes('guide=1')) {
+    showLanding();
+    return;
+  }
   const urlHash = getUrlHash();
   const sName  = localStorage.getItem('fb_name');
   const sColor = localStorage.getItem('fb_color');
