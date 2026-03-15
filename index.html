@@ -229,15 +229,19 @@
     -webkit-user-select: none;
   }
   .memo-card.drag-source {
-    opacity: 0.4;
-    transform: scale(0.98);
-    transition: opacity 0.15s, transform 0.15s;
+    opacity: 0.0;   /* 원본 카드 완전히 숨김 → 고스트만 보임 */
+    pointer-events: none;
   }
-  .memo-card.drag-over {
-    border: 2px dashed var(--accent);
-    background: var(--accent-light);
-    transform: scale(1.01);
-    transition: transform 0.1s;
+  .memo-card.drag-placeholder {
+    /* 드래그 중 삽입 위치 표시 */
+    border: 2px dashed var(--accent) !important;
+    background: var(--accent-light) !important;
+    opacity: 0.5;
+    pointer-events: none;
+  }
+  /* 카드 이동 애니메이션 */
+  .memo-card {
+    transition: transform 0.15s ease;
   }
   .drag-ghost {
     position: fixed;
@@ -1324,7 +1328,7 @@ window.toggleComplete = async (id) => {
 // ── 드래그 앤 드롭 상태 ──
 let dragSrcId = null;
 let dragGhost = null;
-let dragOverId = null;
+let dragPlaceholder = null; // 삽입 위치 표시용 플레이스홀더
 let longPressTimer = null;
 const LONG_PRESS_MS = 500;
 
@@ -1332,50 +1336,85 @@ function removeDragGhost() {
   if (dragGhost) { dragGhost.remove(); dragGhost = null; }
 }
 
+function removePlaceholder() {
+  if (dragPlaceholder) { dragPlaceholder.remove(); dragPlaceholder = null; }
+}
+
 function createGhost(card, clientX, clientY) {
   removeDragGhost();
   const ghost = document.createElement('div');
   ghost.className = 'drag-ghost';
-  // 작성자 + 내용 요약만 표시
   const authorEl = card.querySelector('.author-name');
   const textEl   = card.querySelector('.card-text');
   ghost.innerHTML = `<strong style="color:var(--accent)">${authorEl ? authorEl.textContent : ''}</strong><br>${textEl ? textEl.textContent.substring(0,60) : ''}`;
   document.body.appendChild(ghost);
-  const rect = ghost.getBoundingClientRect();
-  ghost.style.left = (clientX - rect.width / 2) + 'px';
-  ghost.style.top  = (clientY - 30) + 'px';
+  // 고스트 크기: 카드 너비 기준
+  const cardRect = card.getBoundingClientRect();
+  ghost.style.width = cardRect.width + 'px';
+  ghost.style.left = (clientX - cardRect.width / 2) + 'px';
+  ghost.style.top  = (clientY - 40) + 'px';
   dragGhost = ghost;
 }
 
 function moveGhost(clientX, clientY) {
   if (!dragGhost) return;
-  const rect = dragGhost.getBoundingClientRect();
-  dragGhost.style.left = (clientX - rect.width / 2) + 'px';
-  dragGhost.style.top  = (clientY - 30) + 'px';
+  const w = dragGhost.offsetWidth;
+  dragGhost.style.left = (clientX - w / 2) + 'px';
+  dragGhost.style.top  = (clientY - 40) + 'px';
+}
+
+// 드래그 중 실시간 카드 재배치
+// → 손가락이 특정 카드 위에 오면 플레이스홀더를 그 카드 앞/뒤로 이동
+function reorderPreview(body, clientY) {
+  const srcCard = body.querySelector(`.memo-card[data-id="${dragSrcId}"]`);
+  if (!srcCard) return;
+
+  // 플레이스홀더 없으면 생성
+  if (!dragPlaceholder) {
+    dragPlaceholder = document.createElement('div');
+    dragPlaceholder.className = 'memo-card drag-placeholder';
+    dragPlaceholder.style.height = srcCard.offsetHeight + 'px';
+    dragPlaceholder.style.margin = window.getComputedStyle(srcCard).margin;
+  }
+
+  // 현재 모든 카드(플레이스홀더 제외, 원본 제외)
+  const cards = [...body.querySelectorAll('.memo-card[data-id]')]
+    .filter(c => c.dataset.id !== dragSrcId);
+
+  // 손가락 Y 기준으로 어느 카드 앞에 삽입할지 결정
+  let insertBefore = null;
+  for (const c of cards) {
+    const rect = c.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    if (clientY < midY) {
+      insertBefore = c;
+      break;
+    }
+  }
+
+  // 플레이스홀더 위치 변경 (이미 그 자리면 스킵)
+  if (insertBefore) {
+    if (dragPlaceholder.nextSibling !== insertBefore) {
+      body.insertBefore(dragPlaceholder, insertBefore);
+    }
+  } else {
+    // 맨 뒤
+    if (body.lastChild !== dragPlaceholder) {
+      body.appendChild(dragPlaceholder);
+    }
+  }
 }
 
 async function saveDragOrder(orderedIds) {
-  // 각 아이템에 order 값 일괄 업데이트
   const updates = {};
   orderedIds.forEach((id, idx) => {
     updates[`rooms/${roomCode}/items/${id}/order`] = idx * 1000;
   });
   try {
-    // update는 상단 import에서 이미 가져옴
     await update(ref(db, '/'), updates);
   } catch(e) {
     showToast('⚠️ 순서 저장에 실패했어요');
   }
-}
-
-function getCardIdAtPoint(x, y) {
-  // 특정 좌표 아래에 있는 카드 id 반환
-  const els = document.elementsFromPoint(x, y);
-  for (const el of els) {
-    const card = el.closest('.memo-card[data-id]');
-    if (card && card.dataset.id !== dragSrcId) return card.dataset.id;
-  }
-  return null;
 }
 
 // 메모 렌더링
@@ -1418,12 +1457,11 @@ function renderItems(items) {
     body.appendChild(card);
   });
 
-  // ── 드래그 이벤트를 board-body 컨테이너에 위임 (카드 개별 등록 금지) ──
-  // 이미 등록됐으면 재등록 방지
+  // ── 드래그 이벤트를 board-body 컨테이너에 위임 ──
   if (!body._dragInited) {
     body._dragInited = true;
 
-    // touchstart: board-body 내 카드에서만 longPress 시작
+    // ── touchstart: 길게 누르기 시작 ──
     body.addEventListener('touchstart', e => {
       const card = e.target.closest('.memo-card[data-id]');
       if (!card || e.target.closest('button')) return;
@@ -1433,62 +1471,52 @@ function renderItems(items) {
         dragSrcId = card.dataset.id;
         card.classList.add('drag-source');
         createGhost(card, touch.clientX, touch.clientY);
+        // 즉시 플레이스홀더 삽입 (원본 자리에)
+        reorderPreview(body, touch.clientY);
       }, LONG_PRESS_MS);
     }, { passive: true });
 
-    // touchmove: passive:false지만 board-body 안에만 등록
-    // → 시간표(schedule-section)는 board-body 밖이므로 영향 없음
+    // ── touchmove: 실시간 재배치 ──
     body.addEventListener('touchmove', e => {
-      if (!dragSrcId) {
-        clearTimeout(longPressTimer);
-        return;
-      }
-      e.preventDefault(); // 드래그 중 스크롤 방지
+      if (!dragSrcId) { clearTimeout(longPressTimer); return; }
+      e.preventDefault();
       const touch = e.touches[0];
       moveGhost(touch.clientX, touch.clientY);
-      const overId = getCardIdAtPoint(touch.clientX, touch.clientY);
-      if (overId !== dragOverId) {
-        document.querySelectorAll('.memo-card.drag-over').forEach(c => c.classList.remove('drag-over'));
-        dragOverId = overId;
-        if (overId) {
-          const overCard = document.querySelector(`.memo-card[data-id="${overId}"]`);
-          if (overCard) overCard.classList.add('drag-over');
-        }
-      }
+      reorderPreview(body, touch.clientY); // 실시간으로 플레이스홀더 이동
     }, { passive: false });
 
-    // touchend: 드래그 완료 처리
+    // ── touchend: 확정 + Firebase 저장 ──
     body.addEventListener('touchend', async e => {
       clearTimeout(longPressTimer);
       if (!dragSrcId) return;
-      const touch = e.changedTouches[0];
-      const overId = getCardIdAtPoint(touch.clientX, touch.clientY);
-      document.querySelectorAll('.memo-card.drag-source, .memo-card.drag-over')
-        .forEach(c => c.classList.remove('drag-source', 'drag-over'));
-      removeDragGhost();
-      if (overId && overId !== dragSrcId) {
-        const allCards = [...document.querySelectorAll('.memo-card[data-id]')];
-        const orderedIds = allCards.map(c => c.dataset.id);
-        const srcIdx  = orderedIds.indexOf(dragSrcId);
-        const destIdx = orderedIds.indexOf(overId);
-        if (srcIdx !== -1 && destIdx !== -1) {
-          orderedIds.splice(srcIdx, 1);
-          orderedIds.splice(destIdx, 0, dragSrcId);
-          await saveDragOrder(orderedIds);
-        }
+
+      // 플레이스홀더 위치에 원본 카드 삽입
+      const srcCard = body.querySelector(`.memo-card[data-id="${dragSrcId}"]`);
+      if (srcCard && dragPlaceholder && dragPlaceholder.parentNode === body) {
+        body.insertBefore(srcCard, dragPlaceholder);
       }
+      removePlaceholder();
+      removeDragGhost();
+
+      // 원본 카드 스타일 복원
+      if (srcCard) srcCard.classList.remove('drag-source');
+
+      // 현재 DOM 순서로 Firebase 저장
+      const allCards = [...body.querySelectorAll('.memo-card[data-id]')];
+      const orderedIds = allCards.map(c => c.dataset.id);
+      await saveDragOrder(orderedIds);
+
       dragSrcId = null;
-      dragOverId = null;
     }, { passive: true });
 
-    // touchcancel
+    // ── touchcancel: 취소 ──
     body.addEventListener('touchcancel', () => {
       clearTimeout(longPressTimer);
-      document.querySelectorAll('.memo-card.drag-source, .memo-card.drag-over')
-        .forEach(c => c.classList.remove('drag-source', 'drag-over'));
+      removePlaceholder();
       removeDragGhost();
+      const srcCard = body.querySelector(`.memo-card.drag-source`);
+      if (srcCard) srcCard.classList.remove('drag-source');
       dragSrcId = null;
-      dragOverId = null;
     }, { passive: true });
   }
 }
