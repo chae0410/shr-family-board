@@ -12,12 +12,25 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// data-only 메시지 → SW에서 직접 알람 표시 (1개만)
+// ── 즉시 업데이트: 새 SW 설치 시 바로 활성화 ──
+self.addEventListener('install', () => {
+  self.skipWaiting(); // 대기 없이 즉시 활성화
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(clients.claim()); // 모든 탭에 즉시 적용
+});
+
+// ── 앱에서 SKIP_WAITING 메시지 받으면 즉시 활성화 ──
+self.addEventListener('message', event => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
+// ── data-only 메시지 → SW에서 알람 1개만 표시 ──
 self.addEventListener('push', event => {
   let data = {};
   try { data = event.data.json(); } catch(e) {}
 
-  // webpush.data 필드에서 꺼내기
   const payload = data.data || {};
   const title = payload.title || '가족 공유판';
   const body  = payload.body  || '';
@@ -27,7 +40,7 @@ self.addEventListener('push', event => {
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
-      tag,        // 같은 tag → 이전 알람 덮어씀 (중복 방지)
+      tag,
       renotify: false,
       vibrate: [200, 100, 200],
       data: { url },
@@ -35,7 +48,7 @@ self.addEventListener('push', event => {
   );
 });
 
-// 알람 클릭 시 앱 열기
+// ── 알람 클릭 시 앱 열기 ──
 self.addEventListener('notificationclick', event => {
   event.notification.close();
   const url = event.notification.data?.url || 'https://chae0410.github.io/shr-family-board/';

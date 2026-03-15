@@ -790,6 +790,24 @@ async function initPush() {
   if (!('serviceWorker' in navigator)) return;
   try {
     const reg = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+
+    // ── SW 즉시 업데이트 ──
+    // 새 버전 감지 시 바로 활성화 (다음 접속 때까지 기다리지 않음)
+    reg.addEventListener('updatefound', () => {
+      const newSW = reg.installing;
+      if (!newSW) return;
+      newSW.addEventListener('statechange', () => {
+        if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+          // 새 SW 설치 완료 → 즉시 활성화 요청
+          newSW.postMessage({ type: 'SKIP_WAITING' });
+        }
+      });
+    });
+
+    // SW가 교체되면 페이지 자동 새로고침 (새 버전 즉시 적용)
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.location.reload();
+    });
     if (!messaging) {
       messaging = getMessaging(app);
     }
