@@ -227,6 +227,8 @@
     background: var(--surface); border-bottom: 1px solid var(--border);
     padding: 8px 18px; display: flex; gap: 14px; overflow-x: auto;
     -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    position: sticky; z-index: 18;
+    /* top 값은 JS에서 top-bar 높이에 맞춰 동적 설정 */
   }
   .members-bar::-webkit-scrollbar { display: none; }
 
@@ -573,6 +575,8 @@
     background: var(--surface);
     border-bottom: 2px solid var(--border);
     padding: 10px 12px 4px;
+    position: sticky; z-index: 17;
+    /* top 값은 JS에서 top-bar + members-bar 높이에 맞춰 동적 설정 */
   }
   .schedule-header {
     display: flex; align-items: center; justify-content: space-between;
@@ -1359,6 +1363,22 @@ function enterBoard() {
       e.preventDefault(); sendMemo();
     }
   });
+
+  // sticky top 값 동적 계산 (각 영역 높이 기반)
+  requestAnimationFrame(updateStickyTops);
+}
+
+function updateStickyTops() {
+  const topBar      = document.querySelector('.top-bar');
+  const membersBar  = document.querySelector('.members-bar');
+  const schedSect   = document.getElementById('schedule-section');
+  if (!topBar || !membersBar || !schedSect) return;
+
+  const topBarH    = topBar.offsetHeight;
+  const membersBarH = membersBar.offsetHeight;
+
+  membersBar.style.top  = topBarH + 'px';
+  schedSect.style.top   = (topBarH + membersBarH) + 'px';
 }
 
 // Presence
