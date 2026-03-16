@@ -242,6 +242,56 @@
   .empty-state { text-align: center; color: var(--text-sub); font-size: 14px; margin-top: 80px; line-height: 2; }
   .empty-icon { font-size: 36px; display: block; margin-bottom: 8px; opacity: 0.4; }
 
+  /* ── 방 사진 변경 모달 ── */
+  .room-photo-modal-overlay {
+    position: fixed; inset: 0; z-index: 3000;
+    background: rgba(0,0,0,0.45);
+    display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    animation: fadeIn 0.15s ease;
+  }
+  .room-photo-modal-box {
+    background: var(--surface);
+    border-radius: 24px 24px 0 0;
+    padding: 24px 20px 32px;
+    width: 100%; max-width: 480px;
+    animation: slideUp 0.2s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; } to { opacity: 1; }
+  }
+  .room-photo-modal-title {
+    font-size: 17px; font-weight: 700;
+    color: var(--text); margin-bottom: 6px; text-align: center;
+  }
+  .room-photo-modal-sub {
+    font-size: 12px; color: var(--text-sub);
+    text-align: center; margin-bottom: 20px;
+  }
+  .room-photo-preview-wrap {
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    margin-bottom: 20px;
+  }
+  .room-photo-preview-wrap img {
+    width: 90px; height: 90px;
+    border-radius: 50%; object-fit: cover;
+    border: 3px solid var(--accent);
+    box-shadow: 0 2px 12px rgba(61,107,79,0.15);
+  }
+  .room-photo-file-label {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--accent-light); color: var(--accent);
+    font-size: 14px; font-weight: 600;
+    padding: 10px 24px; border-radius: 12px;
+    cursor: pointer; border: 1.5px dashed var(--accent);
+    transition: background 0.15s;
+  }
+  .room-photo-file-label:active { background: #d4ead9; }
+
   /* ── 드래그 앤 드롭 ── */
   .memo-card {
     touch-action: pan-y; /* 기본 스크롤 허용, 길게 누르기로 드래그 전환 */
@@ -686,7 +736,11 @@
 <div id="main-screen" style="display:none;">
   <div class="top-bar">
     <div class="top-left">
-      <img src="shrfamily.jpg" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);" alt="가족사진">
+      <img src="shrfamily.jpg" id="room-photo-btn"
+        style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);cursor:pointer;transition:opacity 0.2s;"
+        alt="가족사진" title="방 사진 변경"
+        onclick="openRoomPhotoModal()"
+        onmouseover="this.style.opacity=0.75" onmouseout="this.style.opacity=1">
       <span class="board-title"></span>
     </div>
     <div class="top-right">
@@ -951,7 +1005,7 @@ window.lookupRoom = (rawCode) => {
 };
 
 // 이미지 리사이즈 (canvas, 최대 400px, quality 0.7)
-function resizeImage(file, maxSize = 400, quality = 0.7) {
+function resizeImage(file, maxSize = 300, quality = 0.6) {
   return new Promise((res, rej) => {
     const reader = new FileReader();
     reader.onerror = () => rej(new Error('파일 읽기 실패'));
@@ -964,7 +1018,14 @@ function resizeImage(file, maxSize = 400, quality = 0.7) {
         canvas.width = Math.round(img.width * scale);
         canvas.height = Math.round(img.height * scale);
         canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-        res(canvas.toDataURL('image/jpeg', quality));
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        // Firebase 용량 제한 대비: 1MB 초과 시 품질 더 낮춰 재시도
+        if (dataUrl.length > 1_000_000) {
+          const dataUrl2 = canvas.toDataURL('image/jpeg', 0.4);
+          res(dataUrl2);
+        } else {
+          res(dataUrl);
+        }
       };
       img.src = e.target.result;
     };
@@ -1028,7 +1089,14 @@ window.createRoom = async () => {
     setUrlHash(roomHash);
     enterBoard();
   } catch (e) {
-    showToast('⚠️ 방 만들기에 실패했어요. 잠시 후 다시 시도해주세요');
+    console.error('방 만들기 오류:', e);
+    // 사진 포함 시 용량 초과 가능성 안내
+    const photoInput = document.getElementById('create-photo-input');
+    if (photoInput && photoInput.files[0]) {
+      showToast('⚠️ 방 만들기에 실패했어요.\n사진 없이 먼저 방을 만들어보세요');
+    } else {
+      showToast('⚠️ 방 만들기에 실패했어요. 잠시 후 다시 시도해주세요');
+    }
     btn.disabled = false;
     btn.textContent = '방 만들기 →';
     return;
@@ -1873,6 +1941,71 @@ window.deleteSchedAll = async (name) => {
   }
 };
 // ===================== 학원 시간표 끝 =====================
+
+// ── 방 사진 변경 ──
+window.openRoomPhotoModal = () => {
+  if (document.getElementById('room-photo-modal')) return;
+  const currentPhoto = roomInfo.photoData || 'app-icon.svg';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'room-photo-modal-overlay';
+  overlay.id = 'room-photo-modal';
+  overlay.innerHTML = `
+    <div class="room-photo-modal-box">
+      <div class="room-photo-modal-title">🏠 방 사진 변경</div>
+      <div class="room-photo-modal-sub">새 사진을 선택하면 모든 가족에게 반영돼요</div>
+      <div class="room-photo-preview-wrap">
+        <img id="room-photo-new-preview" src="${currentPhoto}" alt="방 사진 미리보기">
+        <label class="room-photo-file-label">
+          📷 사진 선택
+          <input type="file" accept="image/*" id="room-photo-file-input"
+            style="display:none;" onchange="previewNewRoomPhoto(this)">
+        </label>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn-cancel" style="flex:1;" onclick="closeRoomPhotoModal()">취소</button>
+        <button class="btn-primary" style="flex:2;" onclick="saveRoomPhoto()">저장</button>
+      </div>
+    </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeRoomPhotoModal(); });
+  document.body.appendChild(overlay);
+};
+
+window.previewNewRoomPhoto = async (input) => {
+  if (!input.files[0]) return;
+  try {
+    const resized = await resizeImage(input.files[0]);
+    document.getElementById('room-photo-new-preview').src = resized;
+  } catch(e) {
+    showToast('⚠️ 이미지를 불러올 수 없어요');
+  }
+};
+
+window.closeRoomPhotoModal = () => {
+  const modal = document.getElementById('room-photo-modal');
+  if (modal) modal.remove();
+};
+
+window.saveRoomPhoto = async () => {
+  const fileInput = document.getElementById('room-photo-file-input');
+  if (!fileInput || !fileInput.files[0]) {
+    showToast('⚠️ 사진을 선택해주세요');
+    return;
+  }
+
+  const saveBtn = document.querySelector('#room-photo-modal .btn-primary');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '저장 중...'; }
+
+  try {
+    const photoData = await resizeImage(fileInput.files[0]);
+    await update(ref(db, `rooms/${roomCode}/info`), { photoData });
+    closeRoomPhotoModal();
+    showToast('📸 방 사진이 변경됐어요!');
+  } catch(e) {
+    showToast('⚠️ 저장에 실패했어요. 다시 시도해주세요');
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '저장'; }
+  }
+};
 
 window.logout = () => {
   if (presenceRef) set(presenceRef, { color: myColor, online: false });
