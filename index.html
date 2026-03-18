@@ -1843,7 +1843,7 @@ function renderItems(items) {
           ${item.completed ? '<span class="completed-badge">✓ 완료</span>' : ''}
         </div>
         <div class="card-meta">
-          <span class="card-time">${fmtTime(item.ts)}${item.edited ? ` <span style="font-size:10px;color:var(--text-sub)">(${item.editedBy ? item.editedBy + josa(item.editedBy, '이', '가') + ' ' : ''}수정됨)</span>` : ''}</span>
+          <span class="card-time">${fmtTime(item.ts)}${item.edited ? ` <span style="font-size:10px;color:var(--text-sub)">(수정)</span>` : ''}</span>
           <button class="btn-complete" data-id="${item.id}" title="${item.completed ? '완료 취소' : '완료'}">${item.completed ? '↩' : '✓'}</button>
           <button class="btn-edit" data-id="${item.id}">✏️</button>
           ${item.author === myName ? `<button class="btn-delete" onclick="deleteItem('${item.id}')">×</button>` : ''}
