@@ -609,7 +609,8 @@
   }
   .schedule-table th.sun { color: #C0553C; }
   .schedule-table th.sat { color: #4A6FA5; }
-  .schedule-table th.today { color: #C0553C !important; }
+  /* TODAY: 앱 초록과 어울리는 따뜻한 앰버 골드 */
+  .schedule-table th.today { color: #2A7A5A !important; }
 
   .th-today-wrap {
     display: flex;
@@ -617,38 +618,36 @@
     align-items: center;
     gap: 2px;
     height: 100%;
-    justify-content: flex-end; /* 요일 글자를 항상 하단 기준 정렬 */
+    justify-content: flex-end;
     padding-bottom: 0;
   }
   .th-today-badge {
     font-size: 8px;
     font-weight: 900;
     color: #fff;
-    background: #C0553C;
+    background: linear-gradient(135deg, #3D6B4F, #2A8C82);
     border-radius: 6px;
     padding: 2px 5px;
     line-height: 1.4;
     letter-spacing: 0.3px;
     white-space: nowrap;
-    box-shadow: 0 1px 4px rgba(192,85,60,0.35);
+    box-shadow: 0 1px 5px rgba(42,140,130,0.4);
   }
   .th-today-day {
     font-size: 13px;
     font-weight: 900;
-    color: #C0553C;
+    color: #2A7A5A;
     line-height: 1.2;
-    /* 음영 효과 */
-    text-shadow: 0 1px 6px rgba(192,85,60,0.35);
-    /* 원형 배경 */
+    text-shadow: 0 1px 5px rgba(42,122,90,0.25);
     width: 22px; height: 22px;
     display: flex; align-items: center; justify-content: center;
-    background: rgba(192,85,60,0.1);
+    background: rgba(42,140,130,0.12);
     border-radius: 50%;
-    border: 1.5px solid rgba(192,85,60,0.3);
+    border: 1.5px solid rgba(42,140,130,0.35);
   }
   /* 오늘 컬럼 슬롯 살짝 강조 */
   .schedule-table td.today-col {
-    background: rgba(192,85,60,0.04);
+    background: rgba(42,140,130,0.05);
     border-radius: 4px;
   }
   .schedule-table td {
