@@ -598,42 +598,57 @@
     font-size: 10px;
   }
   .schedule-table th {
-    text-align: center; padding: 4px 1px;
+    text-align: center;
+    /* 모든 th 높이 동일하게 고정 → 요일 가로 라인 맞춤 */
+    height: 42px;
+    vertical-align: bottom;
+    padding: 0 1px 4px;
     font-size: 10px; font-weight: 700;
     color: var(--text-sub); border-bottom: 1px solid var(--border);
     position: relative;
   }
   .schedule-table th.sun { color: #C0553C; }
   .schedule-table th.sat { color: #4A6FA5; }
-  .schedule-table th.today {
-    color: var(--accent) !important;
-  }
+  .schedule-table th.today { color: #C0553C !important; }
+
   .th-today-wrap {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1px;
+    gap: 2px;
+    height: 100%;
+    justify-content: flex-end; /* 요일 글자를 항상 하단 기준 정렬 */
+    padding-bottom: 0;
   }
   .th-today-badge {
-    font-size: 7.5px;
-    font-weight: 800;
+    font-size: 8px;
+    font-weight: 900;
     color: #fff;
-    background: var(--accent);
+    background: #C0553C;
     border-radius: 6px;
-    padding: 1px 4px;
+    padding: 2px 5px;
     line-height: 1.4;
-    letter-spacing: 0.2px;
+    letter-spacing: 0.3px;
     white-space: nowrap;
+    box-shadow: 0 1px 4px rgba(192,85,60,0.35);
   }
   .th-today-day {
-    font-size: 11px;
-    font-weight: 800;
-    color: var(--accent);
-    line-height: 1.3;
+    font-size: 13px;
+    font-weight: 900;
+    color: #C0553C;
+    line-height: 1.2;
+    /* 음영 효과 */
+    text-shadow: 0 1px 6px rgba(192,85,60,0.35);
+    /* 원형 배경 */
+    width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(192,85,60,0.1);
+    border-radius: 50%;
+    border: 1.5px solid rgba(192,85,60,0.3);
   }
   /* 오늘 컬럼 슬롯 살짝 강조 */
   .schedule-table td.today-col {
-    background: rgba(61,107,79,0.04);
+    background: rgba(192,85,60,0.04);
     border-radius: 4px;
   }
   .schedule-table td {
