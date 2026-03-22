@@ -1589,6 +1589,7 @@ window.sendMemo = async () => {
 window.deleteItem = async (id) => {
   try {
     await remove(ref(db, `rooms/${roomCode}/items/${id}`));
+    scheduleBriefingUpdate(); // 메모 삭제 시 브리핑 갱신
   } catch (e) {
     showToast('⚠️ 삭제에 실패했어요. 다시 시도해주세요');
   }
@@ -1645,6 +1646,7 @@ window.saveEdit = async () => {
     });
     closeEditModal();
     showToast('✏️ 수정됐어요!');
+    scheduleBriefingUpdate(); // 메모 수정 시 브리핑 갱신
   } catch (e) {
     showToast('⚠️ 수정에 실패했어요. 다시 시도해주세요');
   }
@@ -1861,10 +1863,11 @@ ${memoList || '미완료 메모 없음'}
     );
 
     const data = await response.json();
-    const text = data.text || '브리핑을 생성할 수 없어요.';
+    const text = data.text || '';
+    if (!text) throw new Error('빈 응답');
     showBriefing(text);
 
-    // 로컬 캐시 저장 (재접속 시 바로 표시)
+    // 성공한 경우만 캐시 저장
     try {
       const key = 'briefing_' + roomHash;
       localStorage.setItem(key, JSON.stringify({ text, ts: Date.now() }));
@@ -1872,6 +1875,8 @@ ${memoList || '미완료 메모 없음'}
 
   } catch(e) {
     console.error('브리핑 오류:', e);
+    // 에러는 캐시 저장 안 함
+    try { localStorage.removeItem('briefing_' + roomHash); } catch(_) {}
     showBriefing('브리핑을 불러올 수 없어요. ↻ 버튼으로 다시 시도해보세요.', true);
   } finally {
     if (btn) btn.classList.remove('spinning');
@@ -1904,17 +1909,20 @@ function setupDailyBriefing() {
 
 // 브리핑 초기화 (입장 시)
 function initBriefing() {
-  // 캐시된 브리핑 먼저 표시 (최대 6시간 유효)
+  // 캐시된 브리핑 먼저 표시 (최대 1시간 유효, 에러 텍스트는 무시)
   try {
     const key = 'briefing_' + roomHash;
     const cached = localStorage.getItem(key);
     if (cached) {
       const { text, ts } = JSON.parse(cached);
-      if (Date.now() - ts < 6*60*60*1000) {
+      const isError = !text || text.includes('불러올 수 없') || text.includes('생성할 수 없');
+      if (!isError && Date.now() - ts < 60*60*1000) {
         showBriefing(text);
         setupDailyBriefing();
         return;
       }
+      // 만료됐거나 에러 캐시면 삭제
+      localStorage.removeItem(key);
     }
   } catch(_) {}
   // 캐시 없거나 만료 → 즉시 생성
