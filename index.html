@@ -1434,7 +1434,7 @@ function enterBoard() {
   listenItems();
   listenSchedules();
   initPush();
-  initBriefing(); // AI 브리핑 초기화
+  // initBriefing은 listenSchedules 첫 로드 후 호출됨 (타이밍 보장)
 
   // 자정에 오늘 요일 헤더 자동 갱신
   const now = new Date();
@@ -1829,28 +1829,42 @@ async function generateBriefing() {
   try {
     // 미완료 메모 목록 수집
     const items = Object.values(itemsMap).filter(i => !i.completed);
-    const schedList = schedules.map(s =>
-      `${['일','월','화','수','목','금','토'][s.day]}요일 ${String(s.startH).padStart(2,'0')}:${String(s.startM).padStart(2,'0')}~${String(s.endH).padStart(2,'0')}:${String(s.endM).padStart(2,'0')} ${s.name}`
-    ).join('\n');
 
-    const memoList = items
-      .sort((a,b) => (a.order??a.ts) - (b.order??b.ts))
-      .map(i => `- [${i.author}] ${i.text}`)
-      .join('\n');
-
+    // 시간표: 요일 이름 포함해서 오늘 기준으로 정렬
     const today = new Date();
     const dayNames = ['일','월','화','수','목','금','토'];
-    const todayStr = `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일 (${dayNames[today.getDay()]}요일)`;
+    const todayDay = today.getDay();
+
+    // 오늘부터 순서대로 요일 정렬 (오늘 → 내일 → ... → 어제)
+    const sortedSchedules = [...schedules].sort((a, b) => {
+      const da = (a.day - todayDay + 7) % 7;
+      const db = (b.day - todayDay + 7) % 7;
+      return da !== db ? da - db : (a.startH*60+a.startM) - (b.startH*60+b.startM);
+    });
+
+    const schedLines = sortedSchedules.map(s => {
+      const isToday = s.day === todayDay;
+      return `${isToday ? '(오늘)' : ''}${dayNames[s.day]}요일 ${String(s.startH).padStart(2,'0')}:${String(s.startM).padStart(2,'0')}~${String(s.endH).padStart(2,'0')}:${String(s.endM).padStart(2,'0')} ${s.name}`;
+    });
+    const schedList = schedLines.length > 0 ? schedLines.join('\n') : '등록된 일정 없음';
+
+    const memoList = items.length > 0
+      ? items.sort((a,b) => (a.order??a.ts) - (b.order??b.ts))
+             .map(i => `- [${i.author}] ${i.text}`)
+             .join('\n')
+      : '미완료 메모 없음';
+
+    const todayStr = `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일 (${dayNames[todayDay]}요일)`;
 
     const prompt = `오늘은 ${todayStr}입니다.
 
-[주간 학원 시간표]
-${schedList || '등록된 일정 없음'}
+[주간 학원 시간표 - 오늘부터 순서]
+${schedList}
 
 [가족 공유 메모 (미완료)]
-${memoList || '미완료 메모 없음'}
+${memoList}
 
-위 가족 공유판 내용을 바탕으로, 오늘 또는 곧 다가오는 중요한 일정과 챙겨야 할 내용을 1~2줄로 친근하고 간결하게 한국어로 브리핑해주세요. 불필요한 인사말 없이 바로 내용만 작성해주세요.`;
+위 가족 공유판 내용을 바탕으로, 오늘 학원 일정과 곧 다가오는 중요한 일정·챙겨야 할 내용을 1~2줄로 친근하고 간결하게 한국어로 브리핑해주세요. 불필요한 인사말 없이 바로 내용만 작성해주세요.`;
 
     // Firebase Functions를 통해 안전하게 Claude API 호출
     const response = await fetch(
@@ -2134,6 +2148,7 @@ function getSchedColor(name) {
 
 // Firebase에서 시간표 리스닝
 function listenSchedules() {
+  let briefingInited = false;
   unsubscribers.push(onValue(ref(db, `rooms/${roomCode}/schedules`), snap => {
     const data = snap.val() || {};
     schedules = Object.entries(data).map(([id, v]) => ({ id, ...v }));
@@ -2142,6 +2157,11 @@ function listenSchedules() {
     const names = [...new Set(schedules.map(s => s.name))].sort();
     names.forEach(n => getSchedColor(n));
     renderSchedule();
+    // 첫 로드 시에만 브리핑 초기화 (schedules 로드 보장 후)
+    if (!briefingInited) {
+      briefingInited = true;
+      initBriefing();
+    }
   }));
 }
 
