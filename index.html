@@ -334,50 +334,6 @@
     padding: 2px 0;
   }
 
-  /* ── AI 브리핑 바 ── */
-  .briefing-bar {
-    background: linear-gradient(135deg, #F0F7F4 0%, #EBF4F2 100%);
-    border-bottom: 1.5px solid #D4EAE6;
-    padding: 10px 14px 12px;
-  }
-  .briefing-header {
-    display: flex; align-items: center; gap: 6px;
-    margin-bottom: 7px;
-  }
-  .briefing-icon { font-size: 14px; flex-shrink: 0; }
-  .briefing-title {
-    font-size: 11px; font-weight: 800;
-    color: var(--accent); letter-spacing: 0.5px;
-    flex-shrink: 0;
-  }
-  .briefing-date {
-    font-size: 10px; color: var(--text-sub);
-    flex: 1;
-  }
-  .briefing-refresh {
-    background: none; border: none;
-    font-size: 14px; color: var(--text-sub);
-    cursor: pointer; padding: 2px 4px;
-    border-radius: 6px; transition: all 0.2s;
-    flex-shrink: 0;
-  }
-  .briefing-refresh:active { color: var(--accent); transform: rotate(180deg); }
-  .briefing-refresh.spinning {
-    animation: spin 0.8s linear infinite;
-    color: var(--accent);
-    pointer-events: none;
-  }
-  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-  .briefing-content {
-    font-size: 13px; color: var(--text);
-    line-height: 1.65;
-    white-space: pre-wrap;
-  }
-  .briefing-content.loading {
-    color: var(--text-sub);
-    font-size: 12px;
-  }
-
   .board-body { flex: 1; padding: 16px 16px 150px; display: flex; flex-direction: column; gap: 10px; }
 
   .empty-state { text-align: center; color: var(--text-sub); font-size: 14px; margin-top: 80px; line-height: 2; }
@@ -970,17 +926,6 @@
   <!-- 미완료 현황 요약 바 -->
   <div class="summary-bar" id="summary-bar" style="display:none;"></div>
 
-  <!-- AI 브리핑 바 -->
-  <div class="briefing-bar" id="briefing-bar" style="display:none;">
-    <div class="briefing-header">
-      <span class="briefing-icon">✨</span>
-      <span class="briefing-title">AI 브리핑</span>
-      <span class="briefing-date" id="briefing-date"></span>
-      <button class="briefing-refresh" id="briefing-refresh-btn" onclick="triggerBriefing()" title="새로고침">↻</button>
-    </div>
-    <div class="briefing-content" id="briefing-content">브리핑을 불러오는 중...</div>
-  </div>
-
   <div class="board-body" id="board-body">
     <div class="empty-state"><span class="empty-icon">✏️</span>불러오는 중...</div>
   </div>
@@ -1434,7 +1379,7 @@ function enterBoard() {
   listenItems();
   listenSchedules();
   initPush();
-  // initBriefing은 listenSchedules 첫 로드 후 호출됨 (타이밍 보장)
+
 
   // 자정에 오늘 요일 헤더 자동 갱신
   const now = new Date();
@@ -1552,8 +1497,7 @@ function listenItems() {
     items.forEach(item => { itemsMap[item.id] = item; });
     renderItems(items);
     renderSummaryBar(items);
-    // 새 메모 올라오면 브리핑 갱신 (디바운스 3초)
-    if (isNewMemo) scheduleBriefingUpdate();
+
   }));
 }
 
@@ -1589,7 +1533,7 @@ window.sendMemo = async () => {
 window.deleteItem = async (id) => {
   try {
     await remove(ref(db, `rooms/${roomCode}/items/${id}`));
-    scheduleBriefingUpdate(); // 메모 삭제 시 브리핑 갱신
+
   } catch (e) {
     showToast('⚠️ 삭제에 실패했어요. 다시 시도해주세요');
   }
@@ -1646,7 +1590,7 @@ window.saveEdit = async () => {
     });
     closeEditModal();
     showToast('✏️ 수정됐어요!');
-    scheduleBriefingUpdate(); // 메모 수정 시 브리핑 갱신
+
   } catch (e) {
     showToast('⚠️ 수정에 실패했어요. 다시 시도해주세요');
   }
@@ -1798,150 +1742,6 @@ async function saveDragOrder(orderedIds) {
   } catch(e) {
     showToast('⚠️ 순서 저장에 실패했어요');
   }
-}
-
-// ── AI 브리핑 ──
-let briefingTimer = null;        // 매일 오전 7시 타이머
-let briefingLastDate = '';       // 마지막 브리핑 날짜 (중복 방지)
-let briefingPending = false;     // 새 메모 디바운스 플래그
-let briefingDebounce = null;     // 새 메모 디바운스 타이머
-
-// 브리핑 표시 영역 업데이트
-function showBriefing(text, isLoading = false) {
-  const bar     = document.getElementById('briefing-bar');
-  const content = document.getElementById('briefing-content');
-  const dateEl  = document.getElementById('briefing-date');
-  if (!bar || !content) return;
-
-  bar.style.display = 'block';
-  const now = new Date();
-  dateEl.textContent = `${now.getMonth()+1}/${now.getDate()} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-  content.className = 'briefing-content' + (isLoading ? ' loading' : '');
-  content.textContent = text;
-}
-
-// Claude API 호출해서 브리핑 생성
-async function generateBriefing() {
-  const btn = document.getElementById('briefing-refresh-btn');
-  if (btn) btn.classList.add('spinning');
-  showBriefing('브리핑을 생성하는 중...', true);
-
-  try {
-    // 미완료 메모 목록 수집
-    const items = Object.values(itemsMap).filter(i => !i.completed);
-
-    // 시간표: 요일 이름 포함해서 오늘 기준으로 정렬
-    const today = new Date();
-    const dayNames = ['일','월','화','수','목','금','토'];
-    const todayDay = today.getDay();
-
-    // 오늘부터 순서대로 요일 정렬 (오늘 → 내일 → ... → 어제)
-    const sortedSchedules = [...schedules].sort((a, b) => {
-      const da = (a.day - todayDay + 7) % 7;
-      const db = (b.day - todayDay + 7) % 7;
-      return da !== db ? da - db : (a.startH*60+a.startM) - (b.startH*60+b.startM);
-    });
-
-    const schedLines = sortedSchedules.map(s => {
-      const isToday = s.day === todayDay;
-      return `${isToday ? '(오늘)' : ''}${dayNames[s.day]}요일 ${String(s.startH).padStart(2,'0')}:${String(s.startM).padStart(2,'0')}~${String(s.endH).padStart(2,'0')}:${String(s.endM).padStart(2,'0')} ${s.name}`;
-    });
-    const schedList = schedLines.length > 0 ? schedLines.join('\n') : '등록된 일정 없음';
-
-    const memoList = items.length > 0
-      ? items.sort((a,b) => (a.order??a.ts) - (b.order??b.ts))
-             .map(i => `- [${i.author}] ${i.text}`)
-             .join('\n')
-      : '미완료 메모 없음';
-
-    const todayStr = `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일 (${dayNames[todayDay]}요일)`;
-
-    const prompt = `오늘은 ${todayStr}입니다.
-
-[주간 학원 시간표 - 오늘부터 순서]
-${schedList}
-
-[가족 공유 메모 (미완료)]
-${memoList}
-
-위 가족 공유판 내용을 바탕으로, 오늘 학원 일정과 곧 다가오는 중요한 일정·챙겨야 할 내용을 1~2줄로 친근하고 간결하게 한국어로 브리핑해주세요. 불필요한 인사말 없이 바로 내용만 작성해주세요.`;
-
-    // Firebase Functions를 통해 안전하게 Claude API 호출
-    const response = await fetch(
-      "https://us-central1-shr-family-board.cloudfunctions.net/getBriefing",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt })
-      }
-    );
-
-    const data = await response.json();
-    const text = data.text || '';
-    if (!text) throw new Error('빈 응답');
-    showBriefing(text);
-
-    // 성공한 경우만 캐시 저장
-    try {
-      const key = 'briefing_' + roomHash;
-      localStorage.setItem(key, JSON.stringify({ text, ts: Date.now() }));
-    } catch(_) {}
-
-  } catch(e) {
-    console.error('브리핑 오류:', e);
-    // 에러는 캐시 저장 안 함
-    try { localStorage.removeItem('briefing_' + roomHash); } catch(_) {}
-    showBriefing('브리핑을 불러올 수 없어요. ↻ 버튼으로 다시 시도해보세요.', true);
-  } finally {
-    if (btn) btn.classList.remove('spinning');
-  }
-}
-
-// 외부에서 호출 가능한 트리거
-window.triggerBriefing = () => generateBriefing();
-
-// 새 메모 올라올 때 디바운스 후 브리핑 갱신 (3초 대기)
-function scheduleBriefingUpdate() {
-  clearTimeout(briefingDebounce);
-  briefingDebounce = setTimeout(() => {
-    generateBriefing();
-  }, 3000);
-}
-
-// 매일 오전 7시 자동 브리핑 타이머 설정
-function setupDailyBriefing() {
-  if (briefingTimer) clearTimeout(briefingTimer);
-  const now   = new Date();
-  const next7 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 0, 0);
-  if (next7 <= now) next7.setDate(next7.getDate() + 1); // 이미 지났으면 내일 7시
-  const msUntil7 = next7 - now;
-  briefingTimer = setTimeout(() => {
-    generateBriefing();
-    setInterval(generateBriefing, 24*60*60*1000); // 이후 매 24시간
-  }, msUntil7);
-}
-
-// 브리핑 초기화 (입장 시)
-function initBriefing() {
-  // 캐시된 브리핑 먼저 표시 (최대 1시간 유효, 에러 텍스트는 무시)
-  try {
-    const key = 'briefing_' + roomHash;
-    const cached = localStorage.getItem(key);
-    if (cached) {
-      const { text, ts } = JSON.parse(cached);
-      const isError = !text || text.includes('불러올 수 없') || text.includes('생성할 수 없');
-      if (!isError && Date.now() - ts < 60*60*1000) {
-        showBriefing(text);
-        setupDailyBriefing();
-        return;
-      }
-      // 만료됐거나 에러 캐시면 삭제
-      localStorage.removeItem(key);
-    }
-  } catch(_) {}
-  // 캐시 없거나 만료 → 즉시 생성
-  generateBriefing();
-  setupDailyBriefing();
 }
 
 // ── 미완료 현황 요약 바 업데이트 ──
@@ -2148,7 +1948,6 @@ function getSchedColor(name) {
 
 // Firebase에서 시간표 리스닝
 function listenSchedules() {
-  let briefingInited = false;
   unsubscribers.push(onValue(ref(db, `rooms/${roomCode}/schedules`), snap => {
     const data = snap.val() || {};
     schedules = Object.entries(data).map(([id, v]) => ({ id, ...v }));
@@ -2157,11 +1956,6 @@ function listenSchedules() {
     const names = [...new Set(schedules.map(s => s.name))].sort();
     names.forEach(n => getSchedColor(n));
     renderSchedule();
-    // 첫 로드 시에만 브리핑 초기화 (schedules 로드 보장 후)
-    if (!briefingInited) {
-      briefingInited = true;
-      initBriefing();
-    }
   }));
 }
 
