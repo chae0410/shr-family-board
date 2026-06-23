@@ -697,6 +697,20 @@
   .add-modal-btns .btn-back { background: var(--bg); color: var(--text-sub); border: 1.5px solid var(--border); }
   .add-modal-btns .btn-next { background: var(--accent); color: #fff; }
   .add-modal-btns .btn-next:disabled { opacity: 0.4; pointer-events: none; }
+
+  /* 3버튼 레이아웃 (취소 + 이전 + 다음/완료) */
+  .add-modal-btns.step3 { gap: 8px; }
+  .add-modal-btns.step3 .btn-cancel-step {
+    flex: 0 0 auto; padding: 13px 16px;
+    background: var(--bg); color: var(--red);
+    border: 1.5px solid rgba(192,85,60,0.25);
+    border-radius: 12px; font-size: 13px; font-weight: 700;
+    font-family: 'Noto Sans KR', sans-serif; cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .add-modal-btns.step3 .btn-cancel-step:active { transform: scale(0.96); }
+  .add-modal-btns.step3 .btn-back { flex: 0 0 auto; padding: 13px 16px; }
+  .add-modal-btns.step3 .btn-next { flex: 1; }
   .memo-textarea {
     flex: 1; border: 1.5px solid var(--border); border-radius: 14px;
     padding: 11px 14px; font-size: 14px; font-family: 'Noto Sans KR', sans-serif;
@@ -1797,7 +1811,7 @@ window.openAddScheduleModal = () => {
   overlay.addEventListener('click', e => { if (e.target === overlay) closeAddScheduleModal(); });
 };
 
-function renderScheduleStep(step) {
+window.renderScheduleStep = function(step) {
   const overlay = document.getElementById('add-schedule-modal');
   if (!overlay) return;
 
@@ -1867,7 +1881,8 @@ function renderScheduleStep(step) {
         ${dots}
         <label class="add-modal-label">구성원 선택</label>
         <div class="member-select-grid">${memBtns}</div>
-        <div class="add-modal-btns">
+        <div class="add-modal-btns step3">
+          <button class="btn-cancel-step" onclick="closeAddScheduleModal()">취소</button>
           <button class="btn-back" onclick="renderScheduleStep(1)">← 이전</button>
           <button class="btn-next" id="step2-next" onclick="scheduleStep2Next()" ${scheduleData.member?'':'disabled'}>다음 →</button>
         </div>
@@ -1886,11 +1901,12 @@ function renderScheduleStep(step) {
         ${dots}
         <label class="add-modal-label">일정 내용</label>
         <textarea class="add-modal-textarea" id="schedule-content"
-          placeholder="예: 회사 석식(임명기 상무)">${esc(scheduleData.content)}</textarea>
+          placeholder="예: 가족 식사(w/ 할머니, ○○식당, 18:00)">${esc(scheduleData.content)}</textarea>
         <label class="add-modal-label">미리보기</label>
         <div class="schedule-preview" id="final-preview"></div>
-        <div class="add-modal-btns">
-          <button class="btn-back" onclick="renderScheduleStep(2)">← 이전</button>
+        <div class="add-modal-btns step3">
+          <button class="btn-cancel-step" onclick="closeAddScheduleModal()">취소</button>
+          <button class="btn-back" onclick="scheduleStep3Back()">← 이전</button>
           <button class="btn-next" onclick="submitSchedule()">완료 ✓</button>
         </div>
       </div>`;
@@ -1930,6 +1946,13 @@ window.selectScheduleMember = (name, btn) => {
 window.scheduleStep2Next = () => {
   if (!scheduleData.member) { showToast('⚠️ 구성원을 선택해주세요'); return; }
   renderScheduleStep(3);
+};
+
+window.scheduleStep3Back = () => {
+  // 입력 중인 내용 저장 후 2단계로
+  const contentEl = document.getElementById('schedule-content');
+  if (contentEl) scheduleData.content = contentEl.value;
+  renderScheduleStep(2);
 };
 
 window.submitSchedule = async () => {
