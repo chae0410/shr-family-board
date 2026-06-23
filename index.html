@@ -601,6 +601,37 @@
   .member-add-row { display: flex; gap: 8px; }
   .member-add-row .text-input { flex: 1; }
 
+  /* 구성원 이름 입력창 (넓게) */
+  .member-name-input {
+    width: 100%; box-sizing: border-box;
+    border: 1.5px solid var(--border); border-radius: 14px;
+    padding: 15px 16px; font-size: 16px;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text); background: var(--bg);
+    outline: none; margin-bottom: 18px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .member-name-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+  }
+  /* 닫기(작게) + 추가(작게) 버튼 */
+  .member-modal-btns {
+    display: flex; gap: 10px; justify-content: flex-end;
+  }
+  .member-modal-btns button {
+    padding: 10px 22px; border-radius: 12px;
+    font-size: 14px; font-weight: 700;
+    font-family: 'Noto Sans KR', sans-serif;
+    border: none; cursor: pointer; transition: transform 0.15s, opacity 0.2s;
+  }
+  .member-modal-btns button:active { transform: scale(0.96); }
+  .member-close-btn {
+    background: var(--bg); color: var(--text-sub);
+    border: 1.5px solid var(--border);
+  }
+  .member-add-btn { background: var(--accent); color: #fff; }
+
   /* 구성원 선택 버튼 (일정 추가 시) */
   .member-select-grid {
     display: grid; grid-template-columns: repeat(3, 1fr);
@@ -1657,6 +1688,8 @@ function listenMembers() {
     members = Object.entries(data)
       .map(([id, v]) => ({ id, ...v }))
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    // 구성원 모달이 열려있으면 목록 실시간 갱신
+    if (document.getElementById('member-modal')) renderMemberList();
   }));
 }
 
@@ -1675,14 +1708,12 @@ window.openMemberModal = () => {
       <div class="member-list" id="member-list"></div>
 
       <label class="add-modal-label">새 구성원 추가</label>
-      <div class="member-add-row">
-        <input class="text-input" id="new-member-input" placeholder="예: 아빠, 엄마, 이안..." maxlength="10"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();addMember();}">
-        <button class="btn-primary" style="flex:0 0 auto;padding:0 18px;" onclick="addMember()">추가</button>
-      </div>
+      <input class="member-name-input" id="new-member-input" placeholder="예: 아빠, 엄마, 이안..." maxlength="10"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();addMember();}">
 
-      <div class="add-modal-btns" style="margin-top:22px;">
-        <button class="btn-back" onclick="closeMemberModal()">닫기</button>
+      <div class="member-modal-btns">
+        <button class="member-close-btn" onclick="closeMemberModal()">닫기</button>
+        <button class="member-add-btn" onclick="addMember()">추가</button>
       </div>
     </div>`;
   overlay.addEventListener('click', e => { if (e.target === overlay) closeMemberModal(); });
@@ -1714,13 +1745,15 @@ window.addMember = async () => {
   }
   try {
     const maxOrder = Math.max(0, ...members.map(m => m.order ?? 0));
+    // 로컬 members에 즉시 반영 (UI 빠른 갱신)
+    members.push({ id: 'temp_' + Date.now(), name, order: maxOrder + 1 });
     await push(ref(db, `rooms/${roomCode}/scheduleMembers`), {
       name, order: maxOrder + 1, ts: Date.now()
     });
     input.value = '';
+    input.focus();
     showToast(`✅ ${name} 추가됐어요`);
-    // members는 listenMembers로 자동 갱신되므로 잠시 후 렌더
-    setTimeout(renderMemberList, 300);
+    renderMemberList(); // 즉시 갱신 (입력창은 건드리지 않음)
   } catch(e) {
     showToast('⚠️ 추가에 실패했어요');
   }
@@ -1728,8 +1761,10 @@ window.addMember = async () => {
 
 window.removeMember = async (id) => {
   try {
+    // 로컬에서 즉시 제거
+    members = members.filter(m => m.id !== id);
+    renderMemberList();
     await remove(ref(db, `rooms/${roomCode}/scheduleMembers/${id}`));
-    setTimeout(renderMemberList, 300);
   } catch(e) {
     showToast('⚠️ 삭제에 실패했어요');
   }
