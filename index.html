@@ -533,6 +533,139 @@
     padding: 12px 14px 28px; box-shadow: 0 -4px 20px rgba(0,0,0,0.07); z-index: 20;
   }
   .input-row { display: flex; gap: 8px; align-items: flex-end; }
+
+  /* ── 하단 액션 버튼 ── */
+  .action-btn-row { display: flex; gap: 10px; }
+  .action-btn {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    gap: 7px; padding: 14px; border-radius: 14px;
+    font-size: 14px; font-weight: 700; font-family: 'Noto Sans KR', sans-serif;
+    border: none; cursor: pointer; transition: transform 0.15s, opacity 0.2s;
+  }
+  .action-btn:active { transform: scale(0.97); opacity: 0.9; }
+  .action-btn-icon { font-size: 16px; }
+  .member-btn { background: var(--accent-light); color: var(--accent); border: 1.5px solid rgba(61,107,79,0.2); }
+  .schedule-btn { background: var(--accent); color: #fff; }
+
+  /* ── 신규 입력 모달 (구성원/일정 추가) ── */
+  .add-modal-overlay {
+    position: fixed; inset: 0; z-index: 3500;
+    background: rgba(0,0,0,0.45);
+    display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    animation: fadeIn 0.15s ease;
+  }
+  .add-modal-box {
+    background: var(--surface);
+    border-radius: 24px 24px 0 0;
+    padding: 22px 20px 30px;
+    width: 100%; max-width: 480px;
+    max-height: 85vh; overflow-y: auto;
+    animation: slideUp 0.2s ease;
+  }
+  .add-modal-title {
+    font-size: 18px; font-weight: 800; color: var(--text);
+    text-align: center; margin-bottom: 4px;
+  }
+  .add-modal-sub {
+    font-size: 12px; color: var(--text-sub);
+    text-align: center; margin-bottom: 20px;
+  }
+  .add-modal-label {
+    font-size: 12px; font-weight: 700; color: var(--text-sub);
+    margin-bottom: 8px; display: block;
+  }
+
+  /* 구성원 칩 목록 */
+  .member-list {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px;
+    min-height: 20px;
+  }
+  .member-list-empty {
+    font-size: 13px; color: var(--text-sub);
+    padding: 8px 0;
+  }
+  .member-tag {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 12px; border-radius: 20px;
+    background: var(--accent-light); border: 1.5px solid rgba(61,107,79,0.18);
+    font-size: 13px; font-weight: 700; color: var(--accent);
+  }
+  .member-tag .member-del {
+    background: rgba(192,85,60,0.12); color: var(--red);
+    border: none; border-radius: 50%;
+    width: 18px; height: 18px; font-size: 13px; line-height: 1;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .member-add-row { display: flex; gap: 8px; }
+  .member-add-row .text-input { flex: 1; }
+
+  /* 구성원 선택 버튼 (일정 추가 시) */
+  .member-select-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 8px; margin-bottom: 20px;
+  }
+  .member-select-btn {
+    padding: 12px 8px; border-radius: 12px;
+    border: 1.5px solid var(--border); background: var(--bg);
+    font-size: 14px; font-weight: 700; color: var(--text);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .member-select-btn.selected {
+    background: var(--accent); color: #fff; border-color: var(--accent);
+  }
+  .member-select-btn:active { transform: scale(0.96); }
+
+  /* 날짜 선택기 */
+  .date-picker-row { display: flex; gap: 8px; margin-bottom: 20px; }
+  .date-select {
+    flex: 1; padding: 12px 8px; border-radius: 12px;
+    border: 1.5px solid var(--border); background: var(--bg);
+    font-size: 14px; font-weight: 600; color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif; cursor: pointer; outline: none;
+    text-align: center;
+  }
+  .date-select:focus { border-color: var(--accent); }
+
+  /* 미리보기 */
+  .schedule-preview {
+    background: var(--accent-light); border: 1.5px solid rgba(61,107,79,0.2);
+    border-radius: 12px; padding: 14px; margin-bottom: 18px;
+    font-size: 14px; color: var(--text); font-weight: 600;
+    text-align: center; min-height: 20px;
+  }
+  .schedule-preview .preview-empty { color: var(--text-sub); font-weight: 400; }
+
+  /* 단계 표시 */
+  .step-indicator {
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; margin-bottom: 18px;
+  }
+  .step-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--border); transition: all 0.2s;
+  }
+  .step-dot.active { background: var(--accent); width: 24px; border-radius: 4px; }
+
+  .add-modal-textarea {
+    width: 100%; border: 1.5px solid var(--border); border-radius: 12px;
+    padding: 12px 14px; font-size: 14px; font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text); background: var(--bg); resize: none; outline: none;
+    min-height: 80px; line-height: 1.6; margin-bottom: 18px;
+  }
+  .add-modal-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+
+  .add-modal-btns { display: flex; gap: 10px; }
+  .add-modal-btns button {
+    flex: 1; padding: 13px; border-radius: 12px;
+    font-size: 14px; font-weight: 700; font-family: 'Noto Sans KR', sans-serif;
+    border: none; cursor: pointer; transition: transform 0.15s, opacity 0.2s;
+  }
+  .add-modal-btns button:active { transform: scale(0.98); }
+  .add-modal-btns .btn-back { background: var(--bg); color: var(--text-sub); border: 1.5px solid var(--border); }
+  .add-modal-btns .btn-next { background: var(--accent); color: #fff; }
+  .add-modal-btns .btn-next:disabled { opacity: 0.4; pointer-events: none; }
   .memo-textarea {
     flex: 1; border: 1.5px solid var(--border); border-radius: 14px;
     padding: 11px 14px; font-size: 14px; font-family: 'Noto Sans KR', sans-serif;
@@ -931,11 +1064,14 @@
   </div>
 
   <div class="input-area">
-    <div class="input-row">
-      <textarea class="memo-textarea" id="memo-input" placeholder="일정이나 공유할 내용을 입력하세요..." rows="1"></textarea>
-      <button class="btn-send" onclick="sendMemo()">↑</button>
+    <div class="action-btn-row">
+      <button class="action-btn member-btn" onclick="openMemberModal()">
+        <span class="action-btn-icon">👥</span> 구성원 추가
+      </button>
+      <button class="action-btn schedule-btn" onclick="openAddScheduleModal()">
+        <span class="action-btn-icon">📅</span> 일정 추가
+      </button>
     </div>
-    <div class="input-hint" id="input-hint">↵ Enter = 줄바꿈&nbsp;&nbsp;|&nbsp;&nbsp;↑ 버튼 = 전송</div>
   </div>
 </div>
 
@@ -1378,6 +1514,7 @@ function enterBoard() {
   setupPresence();
   listenItems();
   listenSchedules();
+  listenMembers();
   initPush();
 
 
@@ -1404,19 +1541,6 @@ function enterBoard() {
     }
     const completeBtn = e.target.closest('.btn-complete');
     if (completeBtn) toggleComplete(completeBtn.dataset.id);
-  });
-
-  const ta = document.getElementById('memo-input');
-  const newTa = ta.cloneNode(true);
-  ta.parentNode.replaceChild(newTa, ta);
-  newTa.addEventListener('input', () => {
-    newTa.style.height = 'auto';
-    newTa.style.height = Math.min(newTa.scrollHeight, 130) + 'px';
-  });
-  newTa.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault(); sendMemo();
-    }
   });
 
   // sticky top 값 동적 계산 (각 영역 높이 기반)
@@ -1502,31 +1626,302 @@ function listenItems() {
 }
 
 // 메모 전송
-window.sendMemo = async () => {
-  const ta = document.getElementById('memo-input');
-  const text = ta.value.trim();
-  if (!text) return;
+// 메모 생성 공통 함수 (일정 추가 완료 시 호출)
+async function createMemo(text) {
+  if (!text || !text.trim()) return false;
   if (text.length > 500) {
-    showToast('⚠️ 메모는 500자 이하로 입력해주세요 (' + text.length + '/500)');
-    return;
+    showToast('⚠️ 내용은 500자 이하로 입력해주세요');
+    return false;
   }
-  const sendBtn = document.querySelector('.btn-send');
-  if (sendBtn && sendBtn.disabled) return;
-  if (sendBtn) sendBtn.disabled = true;
   try {
-    // 새 메모를 맨 위에 추가하기 위해 현재 최소 order 값 파악
     const minOrder = Math.min(0, ...Object.values(itemsMap).map(i => i.order ?? 0));
     await push(ref(db, `rooms/${roomCode}/items`), {
-      author: myName, color: myColor, text, ts: Date.now(),
-      order: minOrder - 1000  // 기존 메모보다 낮은 order → 맨 위
+      author: myName, color: myColor, text: text.trim(), ts: Date.now(),
+      order: minOrder - 1000
     });
-    ta.value = '';
-    ta.style.height = 'auto';
+    return true;
   } catch (e) {
-    showToast('⚠️ 메모 전송에 실패했어요. 네트워크를 확인해주세요');
-  } finally {
-    if (sendBtn) sendBtn.disabled = false;
+    showToast('⚠️ 전송에 실패했어요. 네트워크를 확인해주세요');
+    return false;
   }
+}
+
+// ══════════════════════════════════════
+// 구성원 관리
+// ══════════════════════════════════════
+let members = []; // 스케줄 대상 구성원 목록
+
+function listenMembers() {
+  unsubscribers.push(onValue(ref(db, `rooms/${roomCode}/scheduleMembers`), snap => {
+    const data = snap.val() || {};
+    members = Object.entries(data)
+      .map(([id, v]) => ({ id, ...v }))
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }));
+}
+
+// ── 구성원 추가 모달 ──
+window.openMemberModal = () => {
+  if (document.getElementById('member-modal')) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'add-modal-overlay';
+  overlay.id = 'member-modal';
+  overlay.innerHTML = `
+    <div class="add-modal-box">
+      <div class="add-modal-title">👥 구성원 관리</div>
+      <div class="add-modal-sub">일정의 주인공이 될 구성원을 추가하세요</div>
+
+      <label class="add-modal-label">현재 구성원</label>
+      <div class="member-list" id="member-list"></div>
+
+      <label class="add-modal-label">새 구성원 추가</label>
+      <div class="member-add-row">
+        <input class="text-input" id="new-member-input" placeholder="예: 아빠, 엄마, 이안..." maxlength="10"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();addMember();}">
+        <button class="btn-primary" style="flex:0 0 auto;padding:0 18px;" onclick="addMember()">추가</button>
+      </div>
+
+      <div class="add-modal-btns" style="margin-top:22px;">
+        <button class="btn-back" onclick="closeMemberModal()">닫기</button>
+      </div>
+    </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeMemberModal(); });
+  document.body.appendChild(overlay);
+  renderMemberList();
+};
+
+function renderMemberList() {
+  const listEl = document.getElementById('member-list');
+  if (!listEl) return;
+  if (members.length === 0) {
+    listEl.innerHTML = `<div class="member-list-empty">아직 추가된 구성원이 없어요</div>`;
+    return;
+  }
+  listEl.innerHTML = members.map(m => `
+    <span class="member-tag">
+      ${esc(m.name)}
+      <button class="member-del" onclick="removeMember('${m.id}')" title="삭제">×</button>
+    </span>`).join('');
+}
+
+window.addMember = async () => {
+  const input = document.getElementById('new-member-input');
+  const name = input.value.trim();
+  if (!name) { showToast('⚠️ 구성원 이름을 입력해주세요'); return; }
+  if (members.some(m => m.name === name)) {
+    showToast('⚠️ 이미 있는 구성원이에요');
+    return;
+  }
+  try {
+    const maxOrder = Math.max(0, ...members.map(m => m.order ?? 0));
+    await push(ref(db, `rooms/${roomCode}/scheduleMembers`), {
+      name, order: maxOrder + 1, ts: Date.now()
+    });
+    input.value = '';
+    showToast(`✅ ${name} 추가됐어요`);
+    // members는 listenMembers로 자동 갱신되므로 잠시 후 렌더
+    setTimeout(renderMemberList, 300);
+  } catch(e) {
+    showToast('⚠️ 추가에 실패했어요');
+  }
+};
+
+window.removeMember = async (id) => {
+  try {
+    await remove(ref(db, `rooms/${roomCode}/scheduleMembers/${id}`));
+    setTimeout(renderMemberList, 300);
+  } catch(e) {
+    showToast('⚠️ 삭제에 실패했어요');
+  }
+};
+
+window.closeMemberModal = () => {
+  const m = document.getElementById('member-modal');
+  if (m) m.remove();
+};
+
+// ══════════════════════════════════════
+// 일정 추가 (단계별 마법사)
+// ══════════════════════════════════════
+let scheduleData = { date: null, member: null, content: '' };
+
+window.openAddScheduleModal = () => {
+  if (document.getElementById('add-schedule-modal')) return;
+  // 구성원이 없으면 먼저 추가 안내
+  if (members.length === 0) {
+    showToast('⚠️ 먼저 "구성원 추가"로 구성원을 등록해주세요');
+    openMemberModal();
+    return;
+  }
+  scheduleData = { date: null, member: null, content: '' };
+  const overlay = document.createElement('div');
+  overlay.className = 'add-modal-overlay';
+  overlay.id = 'add-schedule-modal';
+  document.body.appendChild(overlay);
+  renderScheduleStep(1);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeAddScheduleModal(); });
+};
+
+function renderScheduleStep(step) {
+  const overlay = document.getElementById('add-schedule-modal');
+  if (!overlay) return;
+
+  const dots = `
+    <div class="step-indicator">
+      <div class="step-dot ${step>=1?'active':''}"></div>
+      <div class="step-dot ${step>=2?'active':''}"></div>
+      <div class="step-dot ${step>=3?'active':''}"></div>
+    </div>`;
+
+  if (step === 1) {
+    // 날짜 선택
+    const today = new Date();
+    const curY = today.getFullYear();
+    const yearOpts = [curY, curY+1].map(y => `<option value="${y}" ${scheduleData.date && new Date(scheduleData.date).getFullYear()===y ? 'selected':''}>${y}년</option>`).join('');
+    const monthOpts = Array.from({length:12}, (_,i) => i+1).map(m => `<option value="${m}" ${scheduleData.date && (new Date(scheduleData.date).getMonth()+1)===m ? 'selected':''}>${m}월</option>`).join('');
+    const dayOpts = Array.from({length:31}, (_,i) => i+1).map(d => `<option value="${d}" ${scheduleData.date && new Date(scheduleData.date).getDate()===d ? 'selected':''}>${d}일</option>`).join('');
+
+    overlay.innerHTML = `
+      <div class="add-modal-box">
+        <div class="add-modal-title">📅 일정 추가</div>
+        <div class="add-modal-sub">1단계 · 날짜를 선택하세요</div>
+        ${dots}
+        <label class="add-modal-label">날짜</label>
+        <div class="date-picker-row">
+          <select class="date-select" id="sel-year">${yearOpts}</select>
+          <select class="date-select" id="sel-month">${monthOpts}</select>
+          <select class="date-select" id="sel-day">${dayOpts}</select>
+        </div>
+        <div class="schedule-preview" id="date-preview"></div>
+        <div class="add-modal-btns">
+          <button class="btn-back" onclick="closeAddScheduleModal()">취소</button>
+          <button class="btn-next" onclick="scheduleStep1Next()">다음 →</button>
+        </div>
+      </div>`;
+
+    // 기본값: 오늘 또는 기존 선택값
+    if (!scheduleData.date) {
+      document.getElementById('sel-year').value = curY;
+      document.getElementById('sel-month').value = today.getMonth()+1;
+      document.getElementById('sel-day').value = today.getDate();
+    }
+    const updatePreview = () => {
+      const y = +document.getElementById('sel-year').value;
+      const m = +document.getElementById('sel-month').value;
+      const d = +document.getElementById('sel-day').value;
+      const dayNames = ['일','월','화','수','목','금','토'];
+      const dateObj = new Date(y, m-1, d);
+      document.getElementById('date-preview').textContent =
+        `${m}/${d}(${dayNames[dateObj.getDay()]})`;
+    };
+    ['sel-year','sel-month','sel-day'].forEach(id =>
+      document.getElementById(id).addEventListener('change', updatePreview));
+    updatePreview();
+
+  } else if (step === 2) {
+    // 구성원 선택
+    const memBtns = members.map(m =>
+      `<button class="member-select-btn ${scheduleData.member===m.name?'selected':''}"
+        onclick="selectScheduleMember('${esc(m.name)}', this)">${esc(m.name)}</button>`
+    ).join('');
+
+    overlay.innerHTML = `
+      <div class="add-modal-box">
+        <div class="add-modal-title">📅 일정 추가</div>
+        <div class="add-modal-sub">2단계 · 누구의 일정인가요?</div>
+        ${dots}
+        <label class="add-modal-label">구성원 선택</label>
+        <div class="member-select-grid">${memBtns}</div>
+        <div class="add-modal-btns">
+          <button class="btn-back" onclick="renderScheduleStep(1)">← 이전</button>
+          <button class="btn-next" id="step2-next" onclick="scheduleStep2Next()" ${scheduleData.member?'':'disabled'}>다음 →</button>
+        </div>
+      </div>`;
+
+  } else if (step === 3) {
+    // 내용 입력
+    const dayNames = ['일','월','화','수','목','금','토'];
+    const dateObj = new Date(scheduleData.date);
+    const dateStr = `${dateObj.getMonth()+1}/${dateObj.getDate()}(${dayNames[dateObj.getDay()]})`;
+
+    overlay.innerHTML = `
+      <div class="add-modal-box">
+        <div class="add-modal-title">📅 일정 추가</div>
+        <div class="add-modal-sub">3단계 · 일정 내용을 입력하세요</div>
+        ${dots}
+        <label class="add-modal-label">일정 내용</label>
+        <textarea class="add-modal-textarea" id="schedule-content"
+          placeholder="예: 회사 석식(임명기 상무)">${esc(scheduleData.content)}</textarea>
+        <label class="add-modal-label">미리보기</label>
+        <div class="schedule-preview" id="final-preview"></div>
+        <div class="add-modal-btns">
+          <button class="btn-back" onclick="renderScheduleStep(2)">← 이전</button>
+          <button class="btn-next" onclick="submitSchedule()">완료 ✓</button>
+        </div>
+      </div>`;
+
+    const contentEl = document.getElementById('schedule-content');
+    const updateFinal = () => {
+      const content = contentEl.value.trim();
+      const preview = document.getElementById('final-preview');
+      if (content) {
+        preview.innerHTML = `${dateStr} [${esc(scheduleData.member)}] ${esc(content)}`;
+      } else {
+        preview.innerHTML = `<span class="preview-empty">내용을 입력하면 미리보기가 표시돼요</span>`;
+      }
+    };
+    contentEl.addEventListener('input', updateFinal);
+    contentEl.focus();
+    updateFinal();
+  }
+}
+
+window.scheduleStep1Next = () => {
+  const y = +document.getElementById('sel-year').value;
+  const m = +document.getElementById('sel-month').value;
+  const d = +document.getElementById('sel-day').value;
+  scheduleData.date = new Date(y, m-1, d).getTime();
+  renderScheduleStep(2);
+};
+
+window.selectScheduleMember = (name, btn) => {
+  scheduleData.member = name;
+  document.querySelectorAll('.member-select-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const nextBtn = document.getElementById('step2-next');
+  if (nextBtn) nextBtn.disabled = false;
+};
+
+window.scheduleStep2Next = () => {
+  if (!scheduleData.member) { showToast('⚠️ 구성원을 선택해주세요'); return; }
+  renderScheduleStep(3);
+};
+
+window.submitSchedule = async () => {
+  const contentEl = document.getElementById('schedule-content');
+  const content = contentEl.value.trim();
+  if (!content) { showToast('⚠️ 일정 내용을 입력해주세요'); return; }
+
+  const dayNames = ['일','월','화','수','목','금','토'];
+  const dateObj = new Date(scheduleData.date);
+  const dateStr = `${dateObj.getMonth()+1}/${dateObj.getDate()}(${dayNames[dateObj.getDay()]})`;
+  const finalText = `${dateStr} [${scheduleData.member}] ${content}`;
+
+  const btn = document.querySelector('#add-schedule-modal .btn-next');
+  if (btn) { btn.disabled = true; btn.textContent = '저장 중...'; }
+
+  const ok = await createMemo(finalText);
+  if (ok) {
+    closeAddScheduleModal();
+    showToast('✅ 일정이 추가됐어요!');
+  } else {
+    if (btn) { btn.disabled = false; btn.textContent = '완료 ✓'; }
+  }
+};
+
+window.closeAddScheduleModal = () => {
+  const m = document.getElementById('add-schedule-modal');
+  if (m) m.remove();
 };
 
 // 메모 삭제
