@@ -391,7 +391,7 @@
 
   /* ── 드래그 앤 드롭 ── */
   .memo-card {
-    touch-action: pan-y; /* 기본 스크롤 허용, 길게 누르기로 드래그 전환 */
+    touch-action: auto;
     user-select: none;
     -webkit-user-select: none;
   }
@@ -454,6 +454,15 @@
     border-color: #D8D4CC;
     opacity: 0.75;
   }
+  /* 작성자별 카드 배경 음영 */
+  .memo-card.author-papa { background: #EDF3F9; }    /* 연한 하늘색 (이안 파파) */
+  .memo-card.author-mam  { background: #FBEFEC; }    /* 연한 빨간색 (이안맘) */
+  .memo-card.author-yian { background: #F3EFF9; }    /* 연한 보라색 (이안) */
+  /* 완료된 카드는 음영 제거 (회색 처리 우선) */
+  .memo-card.completed.author-papa,
+  .memo-card.completed.author-mam,
+  .memo-card.completed.author-yian { background: var(--bg); }
+
   .memo-card.completed .card-text {
     text-decoration: line-through;
     color: var(--text-sub);
@@ -2274,6 +2283,48 @@ function getAuthorColor(author) {
 }
 
 // 메모 렌더링
+// 메모 텍스트에서 일정 날짜 파싱 → 오늘로부터 며칠 후인지 반환 (가까울수록 작은 값)
+function parseScheduleDate(text) {
+  if (!text) return null;
+  // "6/24(수)" 또는 "6/24" 또는 "12/3~12/5" 패턴에서 첫 날짜 추출
+  const match = text.match(/(\d{1,2})\/(\d{1,2})/);
+  if (!match) return null;
+
+  const month = parseInt(match[1], 10);
+  const day   = parseInt(match[2], 10);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const curYear = today.getFullYear();
+
+  // 올해 기준 날짜
+  let schedDate = new Date(curYear, month - 1, day);
+  schedDate.setHours(0, 0, 0, 0);
+
+  // 이미 지난 날짜(오늘 기준 6개월 이상 과거)면 내년으로 간주
+  // → 12월에 1월 일정 보면 내년 1월로 처리
+  const diffDays = Math.floor((schedDate - today) / (1000*60*60*24));
+  if (diffDays < -180) {
+    schedDate = new Date(curYear + 1, month - 1, day);
+    schedDate.setHours(0, 0, 0, 0);
+  }
+
+  // 오늘로부터 며칠 후인지 (음수면 과거)
+  return Math.floor((schedDate - today) / (1000*60*60*24));
+}
+
+// 작성자 이름 → 배경색 클래스 매핑
+function getAuthorBgClass(author) {
+  if (!author) return '';
+  // 이름에 '파파' 또는 '아빠' 포함 → 하늘색
+  if (author.includes('파파') || author.includes('아빠') || author.includes('아빠')) return 'author-papa';
+  // 이름에 '맘' 또는 '엄마' 포함 → 빨간색
+  if (author.includes('맘') || author.includes('엄마')) return 'author-mam';
+  // 그 외 (이안 등 아이) → 보라색
+  return 'author-yian';
+}
+
 function renderItems(items) {
   const body = document.getElementById('board-body');
   if (items.length === 0) {
@@ -2281,15 +2332,31 @@ function renderItems(items) {
     return;
   }
 
-  // 미완료 먼저, 완료는 하단으로 (order 정렬은 listenItems에서 이미 적용됨)
+  // 미완료는 날짜순(오늘로부터 가까운 순), 완료는 하단으로
   const active = items.filter(i => !i.completed);
   const done   = items.filter(i =>  i.completed);
+
+  // 미완료 일정을 날짜순 정렬 (오늘로부터 가까운 미래 → 먼 미래 → 날짜없음)
+  active.sort((a, b) => {
+    const da = parseScheduleDate(a.text);
+    const db = parseScheduleDate(b.text);
+    // 둘 다 날짜 있으면 가까운 순
+    if (da !== null && db !== null) return da - db;
+    // 날짜 있는 게 위로
+    if (da !== null) return -1;
+    if (db !== null) return 1;
+    // 둘 다 날짜 없으면 최근 작성순
+    return (b.ts || 0) - (a.ts || 0);
+  });
+
   const sorted = [...active, ...done];
 
   body.innerHTML = '';
   sorted.forEach(item => {
     const card = document.createElement('div');
-    card.className = 'memo-card' + (item.completed ? ' completed' : '');
+    // 작성자별 배경색 클래스 매핑
+    const authorClass = getAuthorBgClass(item.author);
+    card.className = 'memo-card' + (item.completed ? ' completed' : '') + (authorClass ? ' ' + authorClass : '');
     card.dataset.id = item.id;
     card.innerHTML = `
       <div class="card-header">
@@ -2307,14 +2374,13 @@ function renderItems(items) {
           ${item.author === myName ? `<button class="btn-delete" onclick="deleteItem('${item.id}')">×</button>` : ''}
         </div>
       </div>
-      <div class="card-text">${esc(item.text)}</div>
-      <div class="drag-handle-hint">≡ 길게 눌러 순서 변경</div>`;
+      <div class="card-text">${esc(item.text)}</div>`;
 
     body.appendChild(card);
   });
 
-  // ── 드래그 이벤트를 board-body 컨테이너에 위임 ──
-  if (!body._dragInited) {
+  // ── 드래그 이벤트 비활성화 (날짜순 자동 정렬 사용) ──
+  if (false && !body._dragInited) {
     body._dragInited = true;
 
     // ── touchstart: 길게 누르기 시작 ──
